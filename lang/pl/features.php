@@ -15,6 +15,7 @@ return [
         'announcements_confirmation' => ['label' => 'Potwierdzenie zapoznania', 'description' => 'Prośba o kliknięcie „Potwierdzam zapoznanie się”.'],
         'announcements_scheduling' => ['label' => 'Planowanie publikacji', 'description' => 'Wysyłka komunikatu o wybranej godzinie.'],
         'announcements_public' => ['label' => 'Komunikaty publiczne', 'description' => 'Publikacja komunikatu także na portalu publicznym.'],
+        'push' => ['label' => 'Powiadomienia push', 'description' => 'Powiadomienia na telefonie i komputerze (także po zamknięciu aplikacji).'],
         'events' => ['label' => 'Wydarzenia', 'description' => 'Kalendarz wydarzeń szkoły.'],
         'events_public' => ['label' => 'Wydarzenia publiczne', 'description' => 'Pokazywanie wydarzeń na portalu publicznym.'],
         'events_covers' => ['label' => 'Obrazy wydarzeń', 'description' => 'Okładka wydarzenia (także na portalu, jeśli wydarzenie jest publiczne).'],

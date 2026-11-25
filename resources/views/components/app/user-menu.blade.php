@@ -14,6 +14,7 @@
         </div>
         <flux:menu.separator />
         <flux:menu.item icon="user-circle" :href="route('profile')" wire:navigate>{{ __('Mój profil') }}</flux:menu.item>
+        <flux:menu.item icon="bell-alert" :href="route('settings.notifications')" wire:navigate>{{ __('Powiadomienia i aplikacja') }}</flux:menu.item>
         <flux:menu.item icon="sun" x-on:click="$flux.appearance = 'light'">{{ __('Motyw jasny') }}</flux:menu.item>
         <flux:menu.item icon="moon" x-on:click="$flux.appearance = 'dark'">{{ __('Motyw ciemny') }}</flux:menu.item>
         <flux:menu.item icon="computer-desktop" x-on:click="$flux.appearance = 'system'">{{ __('Motyw systemowy') }}</flux:menu.item>

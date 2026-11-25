@@ -19,6 +19,7 @@ enum Feature: string
     case AnnouncementConfirmation = 'announcements.confirmation';
     case AnnouncementScheduling = 'announcements.scheduling';
     case PublicAnnouncements = 'announcements.public';
+    case WebPush = 'push';
 
     // Events
     case Events = 'events';
@@ -60,7 +61,7 @@ enum Feature: string
     {
         return match ($this) {
             self::Announcements, self::Mentions, self::AnnouncementImages, self::AnnouncementConfirmation,
-            self::AnnouncementScheduling, self::PublicAnnouncements => 'communication',
+            self::AnnouncementScheduling, self::PublicAnnouncements, self::WebPush => 'communication',
             self::Events, self::PublicEvents, self::EventCovers, self::EventIcs => 'events',
             self::PublicFront, self::PublicOffers, self::TvMode => 'public',
             self::GroupSelfJoin, self::GroupLogos, self::Invites, self::InviteQr => 'groups',

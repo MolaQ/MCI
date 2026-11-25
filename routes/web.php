@@ -5,6 +5,8 @@ use App\Http\Controllers\JoinController;
 use App\Http\Controllers\MediaController;
 use App\Http\Controllers\MentionSearchController;
 use App\Http\Controllers\PublicContentController;
+use App\Http\Controllers\PushSubscriptionController;
+use App\Http\Controllers\PwaController;
 use App\Http\Controllers\SwitchSchoolController;
 use App\Livewire\Admin;
 use App\Livewire\Admin\Appearance;
@@ -16,8 +18,11 @@ use App\Livewire\Events;
 use App\Livewire\Groups;
 use App\Livewire\Invites;
 use App\Livewire\Publicly;
+use App\Livewire\Settings;
 use App\Livewire\Settings\Profile;
 use App\Livewire\Site;
+use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
+use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -38,6 +43,18 @@ Route::prefix('dolacz')->name('join.')->group(function () {
         Route::get('/{any}', fn () => response()->view('join.invalid', [], 404))->where('any', '.*')->name('invalid');
     });
 });
+
+/*
+| Installable app (Step 4): manifest, icons, service worker, offline page.
+*/
+Route::get('/manifest.webmanifest', [PwaController::class, 'manifest'])->name('pwa.manifest');
+Route::get('/sw.js', [PwaController::class, 'serviceWorker'])->name('pwa.sw');
+Route::get('/offline', [PwaController::class, 'offline'])->name('pwa.offline');
+Route::get('/pwa/icon-{size}.png', [PwaController::class, 'icon'])->whereNumber('size')->name('pwa.icon');
+Route::get('/pwa/icon-{size}-{variant}.png', [PwaController::class, 'icon'])->whereNumber('size')->whereIn('variant', ['maskable', 'badge'])->name('pwa.icon.variant');
+// Called by the service worker when the browser rotates a push subscription (no session).
+Route::post('/push/odnow', [PushSubscriptionController::class, 'renew'])->middleware('throttle:20,1')
+    ->withoutMiddleware([VerifyCsrfToken::class, ValidateCsrfToken::class])->name('push.renew');
 
 // Images: access is checked per file (public logos/covers vs private media).
 Route::get('/media/{uuid}.{ext}', [MediaController::class, 'show'])
@@ -75,6 +92,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/szkola/przelacz', SwitchSchoolController::class)->name('school.switch');
 
     Route::livewire('/ustawienia/profil', Profile::class)->name('profile');
+    Route::livewire('/ustawienia/powiadomienia', Settings\Notifications::class)->name('settings.notifications');
 
     Route::livewire('/grupy', Groups\Index::class)->name('groups.index');
     Route::livewire('/grupy/nowa', Groups\Edit::class)->name('groups.create');

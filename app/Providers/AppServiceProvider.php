@@ -13,6 +13,7 @@ use App\Models\User;
 use App\Support\Appearance;
 use App\Support\CurrentSchool;
 use App\Support\Features;
+use App\Support\Push;
 use App\Support\Settings;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Database\Eloquent\Model;
@@ -24,6 +25,8 @@ use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
+use Minishlink\WebPush\WebPush;
+use NotificationChannels\WebPush\WebPushChannel;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -74,6 +77,9 @@ class AppServiceProvider extends ServiceProvider
 
         // Lazy: settings are only read when a view actually uses them.
         View::share('appearance', $this->app->make(Appearance::class));
+
+        // Web Push client that survives hosts without GMP/BCMath (see Push::client).
+        $this->app->when(WebPushChannel::class)->needs(WebPush::class)->give(fn () => Push::client());
 
         // @feature('events') … @endfeature — for the active school.
         Blade::if('feature', fn (string $key) => app(Features::class)->enabled(Feature::from($key)));

@@ -11,7 +11,7 @@ queue. Moving to a VPS later is a matter of changing `.env`.
 - PHP CLI available to cron (often `/usr/local/bin/php` or `php83`)
 - `proc_open` / `exec` allowed (used by `schedule:run`); if your host forbids
   it, use the alternative cron line below
-- HTTPS (required for the PWA and Web Push in later steps)
+- HTTPS (required for the PWA and Web Push)
 
 ## Profile A — shared hosting (default)
 
@@ -43,6 +43,7 @@ queue. Moving to a VPS later is a matter of changing `.env`.
    php artisan optimize
    ```
    Images (logos, covers, post images) live in `storage/app/media` and are served by the app at `/media/…`, so they work even where the host forbids symlinks. Make sure PHP's `upload_max_filesize` and `post_max_size` are at least `MCI_MEDIA_MAX_UPLOAD_KB` (default 8 MB); include `storage/app/media` in backups.
+   **Web Push**: generate VAPID keys once with `php artisan webpush:vapid` (writes `VAPID_PUBLIC_KEY` / `VAPID_PRIVATE_KEY` to `.env`) and set `VAPID_SUBJECT` to `mailto:` the school IT contact or the site URL. Keep the same keys forever: new keys invalidate every device subscription. Without keys the app works and the settings page says push is not configured. GMP or BCMath speed up encryption but are optional. PWA icons are generated from the logo and cached in `storage/app/pwa` (regenerated automatically when the logo or colour changes).
 5. **Cron** (hosting panel → Cron jobs), every minute:
    ```
    * * * * * cd ~/mci && php artisan schedule:run >> /dev/null 2>&1
