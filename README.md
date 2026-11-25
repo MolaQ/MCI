@@ -1,4 +1,6 @@
-# MCI — Mechaniczne Centrum Informacyjne
+# SOWA — Szkolny Ośrodek Wiadomości i Alarmowania
+
+_Repository/code name: MCI. The displayed name and subtitle are set in Wygląd (appearance settings)._
 
 School information hub: targeted announcements, safety alerts with mandatory
 acknowledgment ("Potwierdzam odbiór"), and multi-stage events / tasks — built

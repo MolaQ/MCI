@@ -11,9 +11,12 @@
                 @if ($appearance->logoUrl())
                     <img src="{{ $appearance->logoUrl() }}" alt="" class="h-8 w-auto" />
                 @else
-                    <span class="flex size-8 shrink-0 items-center justify-center rounded-mci bg-primary text-xs font-bold text-primary-foreground">{{ $appearance->shortName() }}</span>
+                    <span class="flex size-8 shrink-0 items-center justify-center rounded-mci bg-primary text-[0.625rem] font-bold tracking-tight text-primary-foreground">{{ \Illuminate\Support\Str::limit($appearance->shortName(), 4, '') }}</span>
                 @endif
-                <span class="hidden truncate text-sm font-semibold text-zinc-800 sm:block dark:text-zinc-100">{{ $appearance->schoolName() }}</span>
+                <span class="flex min-w-0 flex-col leading-tight">
+                    <span class="truncate text-sm font-bold text-zinc-900 dark:text-white">{{ $appearance->shortName() }}</span>
+                    <span class="hidden truncate text-xs text-zinc-500 sm:block dark:text-zinc-400">{{ $appearance->schoolName() }}</span>
+                </span>
             </a>
 
             <nav class="ms-auto hidden items-center gap-1 text-sm md:flex" aria-label="{{ __('Sekcje') }}">
@@ -51,7 +54,7 @@
 
     <footer class="border-t border-zinc-200 bg-white dark:border-zinc-700 dark:bg-zinc-900">
         <div class="mx-auto flex max-w-6xl 2xl:max-w-7xl flex-col gap-2 px-4 py-6 text-sm text-zinc-500 sm:flex-row sm:items-center sm:justify-between">
-            <span>© {{ now()->year }} {{ $appearance->schoolName() }}</span>
+            <span>© {{ now()->year }} {{ $appearance->shortName() }} · {{ $appearance->schoolName() }}</span>
             <span class="flex flex-wrap gap-4">
                 <a href="{{ route('login') }}" class="hover:text-zinc-800 dark:hover:text-zinc-200">{{ __('Logowanie dla pracowników') }}</a>
                 <a href="{{ route('tv') }}" class="hover:text-zinc-800 dark:hover:text-zinc-200">{{ __('Tablica TV') }}</a>

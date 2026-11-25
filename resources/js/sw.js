@@ -55,9 +55,9 @@ self.addEventListener('push', (event) => {
     try {
         payload = event.data ? event.data.json() : {};
     } catch (e) {
-        payload = { title: 'MCI', body: event.data ? event.data.text() : '' };
+        payload = { title: 'SOWA', body: event.data ? event.data.text() : '' };
     }
-    const { title = 'MCI', ...options } = payload;
+    const { title = 'SOWA', ...options } = payload;
     options.icon ??= '/pwa/icon-192.png';
     options.badge ??= '/pwa/icon-96-badge.png';
     options.lang ??= 'pl';

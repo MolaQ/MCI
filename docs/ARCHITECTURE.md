@@ -1,4 +1,6 @@
-# MCI — Mechaniczne Centrum Informacyjne
+# SOWA — Szkolny Ośrodek Wiadomości i Alarmowania
+
+_Repository/code name: MCI. The displayed name and subtitle are set in Wygląd (appearance settings)._
 
 **Architecture, data model, permission model and roadmap (v0.3)**
 
@@ -556,7 +558,7 @@ All reminder sends go through `task_reminders` for idempotency.
 
 ### 6.1 PWA
 
-- `manifest.webmanifest` (name *MCI*, `display: standalone`, theme colours, maskable icons), `sw.js` hand-written (small; no Workbox needed initially): caches the app shell + offline page, handles `push` and `notificationclick`.
+- `manifest.webmanifest` (name from appearance settings, default *SOWA*, `display: standalone`, theme colours, maskable icons), `sw.js` hand-written (small; no Workbox needed initially): caches the app shell + offline page, handles `push` and `notificationclick`.
 - Install prompts: Android/desktop via `beforeinstallprompt`; **iOS shows manual instructions** (Share → *Do ekranu początkowego*), because on iPhone Web Push only works for a PWA added to the Home Screen (iOS/iPadOS 16.4+).
 
 ### 6.2 Push

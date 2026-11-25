@@ -26,7 +26,7 @@
     <div class="actions"><button type="button" onclick="window.print()">{{ __('Drukuj') }}</button></div>
     <main class="sheet">
         <div class="school">{{ $invite->school->name }}</div>
-        <h1>{{ $invite->label ?: __('Dołącz do MCI') }}</h1>
+        <h1>{{ $invite->label ?: __('Dołącz do :app', ['app' => $appearance->shortName()]) }}</h1>
         @if ($invite->groups->isNotEmpty())
             <p class="groups">{{ $invite->groups->pluck('name')->join(' · ') }}</p>
         @endif

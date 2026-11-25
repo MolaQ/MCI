@@ -1,5 +1,5 @@
 <div class="space-y-6">
-    <x-ui.page-header :title="__('Powiadomienia i aplikacja')" :subtitle="__('Zainstaluj MCI na telefonie i zdecyduj, co może Cię powiadomić.')" />
+    <x-ui.page-header :title="__('Powiadomienia i aplikacja')" :subtitle="__('Zainstaluj :app na telefonie i zdecyduj, co może Cię powiadomić.', ['app' => $appearance->shortName()])" />
 
     <div class="grid gap-6 lg:grid-cols-2">
         <div x-data="mciPush({ vapidKey: @js($pushEnabled ? $vapidKey : null) })">
@@ -32,12 +32,12 @@
             </template>
             <template x-if="state === 'ios-install'">
                 <div class="space-y-2 rounded-mci bg-blue-50 p-3 text-sm text-blue-900 dark:bg-blue-950/40 dark:text-blue-200">
-                    <p class="font-medium">{{ __('Na iPhonie powiadomienia działają po dodaniu MCI do ekranu początkowego:') }}</p>
+                    <p class="font-medium">{{ __('Na iPhonie powiadomienia działają po dodaniu :app do ekranu początkowego:', ['app' => $appearance->shortName()]) }}</p>
                     <ol class="list-decimal space-y-1 ps-5">
                         <li>{{ __('Otwórz tę stronę w Safari.') }}</li>
                         <li>{{ __('Stuknij „Udostępnij” (kwadrat ze strzałką).') }}</li>
                         <li>{{ __('Wybierz „Do ekranu początkowego” i „Dodaj”.') }}</li>
-                        <li>{{ __('Otwórz MCI z ikony na ekranie i wróć tutaj.') }}</li>
+                        <li>{{ __('Otwórz :app z ikony na ekranie i wróć tutaj.', ['app' => $appearance->shortName()]) }}</li>
                     </ol>
                     <p class="text-xs opacity-80">{{ __('Wymaga iOS 16.4 lub nowszego.') }}</p>
                 </div>
