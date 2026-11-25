@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\EnsureFeatureEnabled;
 use App\Http\Middleware\EnsureUserIsActive;
 use App\Http\Middleware\SetCurrentSchool;
 use Illuminate\Foundation\Application;
@@ -23,6 +24,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'permission' => PermissionMiddleware::class,
             'role' => RoleMiddleware::class,
+            'feature' => EnsureFeatureEnabled::class,
         ]);
         $middleware->redirectGuestsTo(fn () => route('login'));
     })

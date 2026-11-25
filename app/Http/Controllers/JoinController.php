@@ -5,12 +5,14 @@ namespace App\Http\Controllers;
 use App\Actions\Fortify\PasswordValidationRules;
 use App\Domain\Invites\Actions\RedeemInvite;
 use App\Domain\Invites\Actions\RegisterFromInvite;
+use App\Enums\Feature;
 use App\Enums\InviteKind;
 use App\Enums\UserStatus;
 use App\Models\Invite;
 use App\Models\User;
 use App\Support\Audit;
 use App\Support\CurrentSchool;
+use App\Support\Features;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -158,7 +160,8 @@ class JoinController extends Controller
     {
         $invite = Invite::findByToken($token);
 
-        if (! $invite) {
+        // A school that switched invites off makes all its links neutral.
+        if (! $invite || app(Features::class)->disabled(Feature::Invites, $invite->school_id)) {
             return null;
         }
 

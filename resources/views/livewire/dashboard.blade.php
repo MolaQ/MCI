@@ -13,6 +13,7 @@
         </div>
     @endif
 
+    @feature('announcements')
     <flux:card class="space-y-3">
         <div class="flex items-center justify-between">
             <flux:heading size="lg">{{ __('Komunikaty') }}</flux:heading>
@@ -31,6 +32,7 @@
             <flux:text>{{ __('Nie masz jeszcze komunikatów.') }}</flux:text>
         @endforelse
     </flux:card>
+    @endfeature
 
     <div class="grid gap-6 lg:grid-cols-3">
         <flux:card class="lg:col-span-2 space-y-4">
@@ -53,6 +55,7 @@
             @endforelse
         </flux:card>
 
+        @feature('events')
         <flux:card class="space-y-3">
             <div class="flex items-center justify-between">
                 <flux:heading size="lg">{{ __('Najbliższe wydarzenia') }}</flux:heading>
@@ -73,5 +76,6 @@
                 <flux:text>{{ __('Brak zaplanowanych wydarzeń.') }}</flux:text>
             @endforelse
         </flux:card>
+        @endfeature
     </div>
 </div>

@@ -22,20 +22,24 @@
                 {{ __('Pulpit') }}
             </flux:sidebar.item>
             @if ($school)
-                <flux:sidebar.item icon="megaphone" :href="route('communication.index')" :current="request()->routeIs('communication.*')" :badge="$unreadAnnouncements ?: null" wire:navigate>
-                    {{ __('Komunikaty') }}
-                </flux:sidebar.item>
-                <flux:sidebar.item icon="calendar-days" :href="route('events.index')" :current="request()->routeIs('events.*')" wire:navigate>
-                    {{ __('Wydarzenia') }}
-                </flux:sidebar.item>
+                @feature('announcements')
+                    <flux:sidebar.item icon="megaphone" :href="route('communication.index')" :current="request()->routeIs('communication.*')" :badge="$unreadAnnouncements ?: null" wire:navigate>
+                        {{ __('Komunikaty') }}
+                    </flux:sidebar.item>
+                @endfeature
+                @feature('events')
+                    <flux:sidebar.item icon="calendar-days" :href="route('events.index')" :current="request()->routeIs('events.*')" wire:navigate>
+                        {{ __('Wydarzenia') }}
+                    </flux:sidebar.item>
+                @endfeature
                 <flux:sidebar.item icon="user-group" :href="route('groups.index')" :current="request()->routeIs('groups.*')" wire:navigate>
                     {{ __('Grupy') }}
                 </flux:sidebar.item>
-                @can('viewAny', \App\Models\Invite::class)
+                @if (app(\App\Support\Features::class)->enabled(\App\Enums\Feature::Invites) && $user->can('viewAny', \App\Models\Invite::class))
                     <flux:sidebar.item icon="qr-code" :href="route('invites.index')" :current="request()->routeIs('invites.*')" wire:navigate>
                         {{ __('Zaproszenia') }}
                     </flux:sidebar.item>
-                @endcan
+                @endif
             @endif
         </flux:sidebar.nav>
 
@@ -53,6 +57,9 @@
                         </flux:sidebar.item>
                         <flux:sidebar.item icon="globe-alt" :href="route('admin.school.profile')" :current="request()->routeIs('admin.school.profile')" wire:navigate>
                             {{ __('Profil publiczny') }}
+                        </flux:sidebar.item>
+                        <flux:sidebar.item icon="adjustments-horizontal" :href="route('admin.school.features')" :current="request()->routeIs('admin.school.features')" wire:navigate>
+                            {{ __('Funkcje szkoły') }}
                         </flux:sidebar.item>
                     @endcan
                     @can('audit.view')
@@ -73,6 +80,9 @@
                     <flux:sidebar.item icon="swatch" :href="route('site.appearance')" :current="request()->routeIs('site.appearance')" wire:navigate>
                         {{ __('Wygląd') }}
                     </flux:sidebar.item>
+                    <flux:sidebar.item icon="adjustments-horizontal" :href="route('site.features')" :current="request()->routeIs('site.features')" wire:navigate>
+                        {{ __('Funkcje') }}
+                    </flux:sidebar.item>
                     <flux:sidebar.item icon="book-open" :href="route('site.journal')" :current="request()->routeIs('site.journal')" wire:navigate>
                         {{ __('Dziennik witryny') }}
                     </flux:sidebar.item>
@@ -83,8 +93,12 @@
         <flux:sidebar.spacer />
 
         <flux:sidebar.nav>
-            <flux:sidebar.item icon="globe-alt" :href="route('home')">{{ __('Portal publiczny') }}</flux:sidebar.item>
-            <flux:sidebar.item icon="tv" :href="route('tv')">{{ __('Tryb TV') }}</flux:sidebar.item>
+            @feature('public.front')
+                <flux:sidebar.item icon="globe-alt" :href="route('home')">{{ __('Portal publiczny') }}</flux:sidebar.item>
+            @endfeature
+            @feature('public.tv')
+                <flux:sidebar.item icon="tv" :href="route('tv')">{{ __('Tryb TV') }}</flux:sidebar.item>
+            @endfeature
         </flux:sidebar.nav>
 
         <x-app.user-menu :user="$user" class="hidden lg:block" />

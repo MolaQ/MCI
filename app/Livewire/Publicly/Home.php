@@ -3,9 +3,11 @@
 namespace App\Livewire\Publicly;
 
 use App\Enums\EventCategory;
+use App\Enums\Feature;
 use App\Models\Announcement;
 use App\Models\Event;
 use App\Models\School;
+use App\Support\Features;
 use App\Support\Mentions;
 use App\Support\RichText;
 use Livewire\Attributes\Computed;
@@ -82,6 +84,14 @@ class Home extends Component
         }
 
         return $this->redirectRoute('join.show', $code);
+    }
+
+    public function mount(): void
+    {
+        // Portal switched off for the whole site: send people where they can go.
+        if (app(Features::class)->disabled(Feature::PublicFront, null)) {
+            $this->redirectRoute(auth()->check() ? 'dashboard' : 'login');
+        }
     }
 
     public function render()

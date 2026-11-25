@@ -2,8 +2,10 @@
 
 namespace App\Models;
 
+use App\Enums\Feature;
 use App\Enums\ProfileVisibility;
 use App\Enums\SchoolMemberStatus;
+use App\Support\Features;
 use Database\Factories\SchoolFactory;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -93,7 +95,8 @@ class School extends Model
     /** Shown on the public front: active and listed by the school. */
     public function scopePubliclyListed(Builder $query): void
     {
-        $query->where('is_active', true)->where('is_listed', true);
+        $query->where('schools.is_active', true)->where('schools.is_listed', true)
+            ->whereNotIn('schools.id', app(Features::class)->schoolsWithout(Feature::PublicFront));
     }
 
     public function setting(string $key, mixed $default = null): mixed

@@ -13,6 +13,7 @@
 ])
 
 @php
+    $background = $background && app(\App\Support\Features::class)->enabled(\App\Enums\Feature::BackgroundRemoval);
     $presetLabels = ['free' => __('Dowolne'), '1:1' => '1:1', '4:3' => '4:3', '3:2' => '3:2', '16:9' => '16:9', '3:1' => '3:1', '4:1' => '4:1'];
 @endphp
 

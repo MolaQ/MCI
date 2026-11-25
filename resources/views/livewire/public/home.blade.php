@@ -100,7 +100,9 @@
                             <p class="text-sm text-zinc-600 dark:text-zinc-300">{{ $s->tagline }}</p>
                         @endif
                         <div class="mt-auto flex gap-4 text-sm text-zinc-500">
-                            <span class="inline-flex items-center gap-1"><flux:icon name="academic-cap" variant="micro" /> {{ trans_choice(':count kierunek|:count kierunki|:count kierunków', $s->offers_count) }}</span>
+                            @if (app(\App\Support\Features::class)->enabled(\App\Enums\Feature::PublicOffers, $s))
+                                <span class="inline-flex items-center gap-1"><flux:icon name="academic-cap" variant="micro" /> {{ trans_choice(':count kierunek|:count kierunki|:count kierunków', $s->offers_count) }}</span>
+                            @endif
                             <span class="inline-flex items-center gap-1"><flux:icon name="calendar" variant="micro" /> {{ trans_choice(':count wydarzenie|:count wydarzenia|:count wydarzeń', $s->upcoming_count) }}</span>
                         </div>
                     </a>

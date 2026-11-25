@@ -5,10 +5,12 @@ namespace App\Livewire\Events;
 use App\Domain\Media\Actions\ReplaceImage;
 use App\Enums\ContentVisibility;
 use App\Enums\EventCategory;
+use App\Enums\Feature;
 use App\Livewire\Concerns\WithImageUploads;
 use App\Models\Event;
 use App\Support\Audit;
 use App\Support\CurrentSchool;
+use App\Support\Features;
 use Carbon\CarbonImmutable;
 use Flux\Flux;
 use Illuminate\Support\Facades\Auth;
@@ -105,6 +107,17 @@ class Edit extends Component
         $this->authorize($event ? 'update' : 'create', $event ?? Event::class);
         $this->validate();
 
+        if ($this->visibility === ContentVisibility::Public->value && app(Features::class)->disabled(Feature::PublicEvents)) {
+            $this->addError('visibility', __('Wydarzenia publiczne są wyłączone w tej szkole.'));
+
+            return null;
+        }
+        if ($this->coverUpload && app(Features::class)->disabled(Feature::EventCovers)) {
+            $this->addError('coverUpload', __('Obrazy wydarzeń są wyłączone.'));
+
+            return null;
+        }
+
         if ($this->visibility === ContentVisibility::Public->value && ! Auth::user()->can('publishPublic', Event::class)) {
             $this->addError('visibility', __('Nie możesz publikować wydarzeń publicznie. Wybierz inny poziom widoczności.'));
 
@@ -182,7 +195,8 @@ class Edit extends Component
     {
         return view('livewire.events.edit', [
             'categories' => EventCategory::cases(),
-            'visibilities' => ContentVisibility::selectable(),
+            'visibilities' => array_values(array_filter(ContentVisibility::selectable(),
+                fn ($v) => $v !== ContentVisibility::Public || app(Features::class)->enabled(Feature::PublicEvents) || $this->visibility === 'public')),
             'canPublishPublic' => Auth::user()->can('publishPublic', Event::class),
         ])->title($this->eventId ? $this->title : __('Nowe wydarzenie'));
     }

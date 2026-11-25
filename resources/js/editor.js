@@ -109,7 +109,8 @@ export default function mciEditor(config) {
                     StarterKit.configure({ heading: { levels: [2, 3] } }),
                     Placeholder.configure({ placeholder: config.placeholder || '' }),
                     Link.configure({ openOnClick: false, autolink: true, protocols: ['https', 'mailto'] }),
-                    Mention.configure({
+                    // Without a search URL (mentions switched off) the @ popup is not installed.
+                    ...(searchUrl ? [Mention.configure({
                         HTMLAttributes: { class: 'mention' },
                         renderText: ({ node }) => '@' + (node.attrs.label ?? node.attrs.id),
                         renderHTML: ({ node }) => ['span', { 'data-type': 'mention', 'data-id': node.attrs.id, 'data-label': node.attrs.label, class: 'mention' }, '@' + (node.attrs.label ?? node.attrs.id)],
@@ -127,7 +128,7 @@ export default function mciEditor(config) {
                             },
                             render: suggestionPopup,
                         },
-                    }),
+                    })] : []),
                 ],
                 editorProps: { attributes: { class: 'mci-prose focus:outline-none min-h-40 px-3 py-2', 'aria-label': config.label || 'Treść' } },
                 onUpdate: ({ editor }) => {

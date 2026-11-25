@@ -23,7 +23,9 @@
                 <div class="whitespace-pre-line text-zinc-700 dark:text-zinc-300">{{ $event->public_description }}</div>
             @endif
             <div class="flex flex-wrap gap-2">
-                <flux:button :href="route('public.event.ics', $event)" icon="calendar-days">{{ __('Dodaj do kalendarza') }}</flux:button>
+                @if (app(\App\Support\Features::class)->enabled(\App\Enums\Feature::EventIcs, $event->school_id))
+                    <flux:button :href="route('public.event.ics', $event)" icon="calendar-days">{{ __('Dodaj do kalendarza') }}</flux:button>
+                @endif
                 <flux:button :href="route('public.school', $event->school->slug)" variant="ghost" icon="academic-cap">{{ __('Oferta szkoły') }}</flux:button>
             </div>
         </flux:card>

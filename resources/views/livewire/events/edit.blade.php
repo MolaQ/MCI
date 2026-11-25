@@ -35,9 +35,11 @@
 
                 <flux:textarea wire:model="description" :label="__('Opis wewnętrzny')" :description="__('Widoczny tylko dla zalogowanych osób z dostępem do wydarzenia.')" rows="4" />
 
+                @feature('events.covers')
                 <x-ui.image-editor model="coverUpload" :label="__('Obraz wydarzenia')" :current="$coverUrl" :remove="$coverUrl ? 'removeCover' : null"
                                    aspect="16:9" :presets="['16:9', '4:3', '1:1', 'free']" :max-size="2000" :background="false"
                                    :hint="__('Widoczny publicznie tylko, gdy wydarzenie jest publiczne.')" />
+                @endfeature
             </flux:card>
         </div>
 

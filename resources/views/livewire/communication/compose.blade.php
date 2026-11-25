@@ -12,6 +12,7 @@
 
                 <x-ui.editor property="body" :label="__('Treść')" :placeholder="__('Napisz komunikat… Wpisz @, aby wspomnieć osobę lub grupę.')" />
 
+                @feature('announcements.images')
                 <div class="space-y-3">
                     <div class="flex flex-wrap items-center justify-between gap-2">
                         <flux:label>{{ __('Obrazy') }} <span class="font-normal text-zinc-400">({{ count($images) }}/{{ config('mci.media.max_post_images') }})</span></flux:label>
@@ -40,6 +41,7 @@
                     <flux:error name="newImage" />
                     <flux:error name="images" />
                 </div>
+                @endfeature
 
                 <div class="space-y-2">
                     <flux:label>{{ __('Priorytet') }}</flux:label>
@@ -147,6 +149,7 @@
                     @endif
                 </div>
 
+                @feature('announcements.scheduling')
                 <div class="space-y-2">
                     <flux:label>{{ __('Publikacja') }}</flux:label>
                     <div class="flex gap-2">
@@ -157,6 +160,7 @@
                         <flux:input type="datetime-local" wire:model="publish_at" />
                     @endif
                 </div>
+                @endfeature
 
                 <div class="space-y-2">
                     <flux:label>{{ __('Wygasa') }}</flux:label>
@@ -168,7 +172,9 @@
                 </div>
 
                 <div class="space-y-3">
-                    <flux:switch wire:model.live="requires_confirmation" :label="__('Wymagaj potwierdzenia zapoznania się')" />
+                    @feature('announcements.confirmation')
+                        <flux:switch wire:model.live="requires_confirmation" :label="__('Wymagaj potwierdzenia zapoznania się')" />
+                    @endfeature
                     <flux:switch wire:model.live="pinned" :label="__('Przypnij na górze listy')" />
                     @if ($this->canPublishPublic)
                         <flux:switch wire:model.live="is_public" :label="__('Pokaż także na stronie publicznej')" />
