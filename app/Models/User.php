@@ -18,6 +18,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Str;
+use NotificationChannels\WebPush\HasPushSubscriptions;
 use Spatie\Permission\Traits\HasRoles;
 
 /**
@@ -31,7 +32,10 @@ use Spatie\Permission\Traits\HasRoles;
 class User extends Authenticatable
 {
     /** @use HasFactory<UserFactory> */
-    use HasFactory, HasRoles, Notifiable, SoftDeletes;
+    use HasFactory, HasPushSubscriptions, HasRoles, Notifiable, SoftDeletes;
+
+    /** Push kinds and their defaults (Ustawienia → Powiadomienia). */
+    public const PUSH_KINDS = ['mentions' => true, 'important' => true, 'confirmations' => true, 'announcements' => false];
 
     protected $fillable = [
         'first_name',
@@ -84,6 +88,11 @@ class User extends Authenticatable
         return $this->belongsToMany(School::class)
             ->withPivot(['status', 'joined_via', 'invite_id'])
             ->withTimestamps();
+    }
+
+    public function wantsPush(string $kind): bool
+    {
+        return (bool) (($this->notification_prefs ?? [])['push'][$kind] ?? self::PUSH_KINDS[$kind] ?? false);
     }
 
     public function belongsToSchool(School|int|null $school, bool $activeOnly = true): bool

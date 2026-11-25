@@ -1,5 +1,6 @@
 import mciEditor from './editor.js';
 import mciImageEditor from './image-editor.js';
+import mciPush from './push.js';
 
 /*
  * Small Alpine helpers. Livewire ships Alpine; we only register components.
@@ -7,6 +8,7 @@ import mciImageEditor from './image-editor.js';
 document.addEventListener('alpine:init', () => {
     window.Alpine.data('mciEditor', mciEditor);
     window.Alpine.data('mciImageEditor', mciImageEditor);
+    window.Alpine.data('mciPush', mciPush);
 
     // Full-screen / TV toggle with one-key exit (docs/ARCHITECTURE.md §12.3).
     window.Alpine.data('mciFullscreen', () => ({
@@ -38,4 +40,19 @@ document.addEventListener('alpine:init', () => {
         },
         destroy() { clearInterval(this.timer); },
     }));
+});
+
+/*
+ * Installable app (Step 4): register the service worker on every page and
+ * keep the browser's install prompt for the "Zainstaluj aplikację" button.
+ */
+if ('serviceWorker' in navigator && window.isSecureContext) {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js', { scope: '/' }).catch(() => {});
+    });
+}
+window.addEventListener('beforeinstallprompt', (event) => {
+    event.preventDefault();
+    window.mciInstallPrompt = event;
+    window.dispatchEvent(new Event('mci:installable'));
 });
