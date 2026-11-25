@@ -55,11 +55,18 @@
             <flux:card class="space-y-5">
                 <flux:heading size="lg">{{ __('Konto') }}</flux:heading>
 
-                <flux:select wire:model="status" :label="__('Status')">
-                    @foreach ($statuses as $s)
-                        <flux:select.option :value="$s->value">{{ $s->label() }}</flux:select.option>
-                    @endforeach
-                </flux:select>
+                @if (auth()->user()->is_site_admin)
+                    <flux:select wire:model="status" :label="__('Status konta (wszystkie szkoły)')">
+                        @foreach ($statuses as $s)
+                            <flux:select.option :value="$s->value">{{ $s->label() }}</flux:select.option>
+                        @endforeach
+                    </flux:select>
+                @elseif ($user)
+                    <div>
+                        <flux:label>{{ __('Status konta') }}</flux:label>
+                        <div class="mt-2"><flux:badge size="sm" :color="$user->status->color()">{{ $user->status->label() }}</flux:badge></div>
+                    </div>
+                @endif
 
                 @if ($this->canManageAccess)
                     <flux:checkbox.group wire:model="roles" :label="__('Role')">
@@ -102,9 +109,16 @@
             @if ($user)
                 @can('delete', $user)
                     <flux:card class="space-y-3">
-                        <flux:heading>{{ __('Usuń konto') }}</flux:heading>
-                        <flux:text>{{ __('Konto zostanie dezaktywowane i usunięte z grup. Historia w dzienniku zdarzeń zostaje.') }}</flux:text>
-                        <flux:button variant="danger" size="sm" wire:click="delete" wire:confirm="{{ __('Na pewno usunąć to konto?') }}">{{ __('Usuń konto') }}</flux:button>
+                        <flux:heading>{{ __('Usuń ze szkoły') }}</flux:heading>
+                        <flux:text>{{ __('Osoba straci dostęp do tej szkoły, jej grup i ról. Konto i inne szkoły pozostają.') }}</flux:text>
+                        <flux:button variant="danger" size="sm" wire:click="removeFromSchool" wire:confirm="{{ __('Usunąć tę osobę ze szkoły?') }}">{{ __('Usuń ze szkoły') }}</flux:button>
+                    </flux:card>
+                @endcan
+                @can('deleteAccount', $user)
+                    <flux:card class="space-y-3">
+                        <flux:heading>{{ __('Usuń konto całkowicie') }}</flux:heading>
+                        <flux:text>{{ __('Tylko administrator witryny. Konto zniknie ze wszystkich szkół; wpisy w dziennikach zostają.') }}</flux:text>
+                        <flux:button variant="danger" size="sm" wire:click="deleteAccount" wire:confirm="{{ __('Na pewno usunąć całe konto?') }}">{{ __('Usuń konto') }}</flux:button>
                     </flux:card>
                 @endcan
             @endif

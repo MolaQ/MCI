@@ -16,8 +16,8 @@
         </flux:select>
         <flux:select wire:model.live="status">
             <flux:select.option value="">{{ __('Każdy status') }}</flux:select.option>
-            @foreach ($statuses as $s)
-                <flux:select.option :value="$s->value">{{ $s->label() }}</flux:select.option>
+            @foreach ($statuses as $value => $label)
+                <flux:select.option :value="$value">{{ $label }}</flux:select.option>
             @endforeach
         </flux:select>
         <flux:select wire:model.live="group">
@@ -38,7 +38,7 @@
             <flux:table.column sortable :sorted="$sortBy === 'last_name'" :direction="$sortDirection" wire:click="sort('last_name')">{{ __('Osoba') }}</flux:table.column>
             <flux:table.column>{{ __('Rola') }}</flux:table.column>
             <flux:table.column>{{ __('Grupy') }}</flux:table.column>
-            <flux:table.column sortable :sorted="$sortBy === 'status'" :direction="$sortDirection" wire:click="sort('status')">{{ __('Status') }}</flux:table.column>
+            <flux:table.column >{{ __('Status') }}</flux:table.column>
             <flux:table.column sortable :sorted="$sortBy === 'last_seen_at'" :direction="$sortDirection" wire:click="sort('last_seen_at')" class="max-md:hidden">{{ __('Ostatnio') }}</flux:table.column>
             <flux:table.column></flux:table.column>
         </flux:table.columns>
@@ -71,7 +71,11 @@
                         </div>
                     </flux:table.cell>
                     <flux:table.cell>
-                        <flux:badge size="sm" :color="$user->status->color()" inset="top bottom">{{ $user->status->label() }}</flux:badge>
+                        @if ($user->school_status === 'suspended')
+                            <flux:badge size="sm" color="red" inset="top bottom">{{ __('Zawieszone w szkole') }}</flux:badge>
+                        @else
+                            <flux:badge size="sm" :color="$user->status->color()" inset="top bottom">{{ $user->status->label() }}</flux:badge>
+                        @endif
                     </flux:table.cell>
                     <flux:table.cell class="max-md:hidden text-zinc-500">
                         {{ $user->last_seen_at?->diffForHumans() ?? '—' }}
@@ -86,8 +90,8 @@
                                 @endcan
                                 @can('suspend', $user)
                                     <flux:menu.item icon="no-symbol" variant="danger" wire:click="toggleSuspension({{ $user->id }})"
-                                                    wire:confirm="{{ $user->status === \App\Enums\UserStatus::Suspended ? __('Przywrócić konto?') : __('Zawiesić konto? Użytkownik zostanie wylogowany.') }}">
-                                        {{ $user->status === \App\Enums\UserStatus::Suspended ? __('Przywróć konto') : __('Zawieś konto') }}
+                                                    wire:confirm="{{ $user->school_status === 'suspended' ? __('Przywrócić dostęp do szkoły?') : __('Zawiesić dostęp do tej szkoły? Inne szkoły tej osoby nie zmienią się.') }}">
+                                        {{ $user->school_status === 'suspended' ? __('Przywróć dostęp') : __('Zawieś w szkole') }}
                                     </flux:menu.item>
                                 @endcan
                             </flux:menu>

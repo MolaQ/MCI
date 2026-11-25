@@ -7,6 +7,7 @@ use App\Enums\Role;
 use App\Models\Group;
 use App\Models\User;
 use App\Support\Audit;
+use App\Support\CurrentSchool;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
@@ -87,13 +88,20 @@ class ImportUsersFromCsv
             }
 
             $existing = User::withTrashed()->where('email', $row['email'])->first();
-            if ($existing && ! $updateExisting) {
+            if ($existing?->trashed()) {
+                $result['errors'][$line] = __('Konto z tym adresem zostało usunięte. Przywrócić je może administrator witryny.');
+
+                continue;
+            }
+
+            $inSchool = (bool) $existing?->schools()->whereKey(app(CurrentSchool::class)->id())->exists();
+            if ($existing && $inSchool && ! $updateExisting) {
                 $result['skipped']++;
 
                 continue;
             }
 
-            $prepared[] = [$row, $groups, $existing];
+            $prepared[] = [$row, $groups, $existing, $inSchool];
             $existing ? $result['updated']++ : $result['created']++;
         }
 
@@ -104,7 +112,7 @@ class ImportUsersFromCsv
         $toNotify = [];
 
         DB::transaction(function () use ($prepared, &$toNotify) {
-            foreach ($prepared as [$row, $groups, $existing]) {
+            foreach ($prepared as [$row, $groups, $existing, $inSchool]) {
                 $data = [
                     'first_name' => trim($row['first_name']),
                     'last_name' => trim($row['last_name']),
@@ -115,16 +123,19 @@ class ImportUsersFromCsv
 
                 if ($existing) {
                     // Import adds memberships; it never removes ones made in the app.
-                    $groups = $existing->groups()->get()
+                    $groups = $existing->schoolGroups()->get()
                         ->mapWithKeys(fn ($g) => [$g->id => $g->pivot->role->value])
                         ->replace($groups)
                         ->all();
                 }
 
                 $data['groups'] = $groups;
+                $data['joined_via'] = 'import';
 
-                if ($existing?->trashed()) {
-                    $existing->restore();
+                if ($existing && ! $inSchool) {
+                    // Someone who already has an account in another school: join
+                    // them to this school, but never overwrite their personal data.
+                    unset($data['first_name'], $data['last_name'], $data['email'], $data['phone']);
                 }
 
                 $user = $this->saveUser->handle($data, $existing);
@@ -199,7 +210,7 @@ class ImportUsersFromCsv
     private function groupIndex(): array
     {
         $index = [];
-        foreach (Group::query()->get(['id', 'name', 'slug']) as $group) {
+        foreach (Group::query()->inCurrentSchool()->get(['id', 'name', 'slug']) as $group) {
             $index[Str::lower($group->name)] = $group->id;
             $index[Str::lower($group->slug)] = $group->id;
         }

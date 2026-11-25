@@ -5,6 +5,7 @@ use App\Enums\GroupRole;
 use App\Enums\UserStatus;
 use App\Livewire\Admin\Users\Import;
 use App\Models\Group;
+use App\Models\School;
 use App\Models\User;
 use App\Notifications\AccountSetupNotification;
 use Illuminate\Http\UploadedFile;
@@ -78,7 +79,7 @@ it('reports invalid rows, unknown groups and duplicates by line number', functio
 });
 
 it('skips existing accounts unless updating is requested, and never removes memberships', function () {
-    $existing = User::factory()->create(['email' => 'anna@szkola.edu.pl', 'first_name' => 'Stara']);
+    $existing = member(['email' => 'anna@szkola.edu.pl', 'first_name' => 'Stara']);
     $other = Group::factory()->create(['name' => 'Wolontariat']);
     $existing->groups()->attach($other->id, ['role' => 'member']);
 
@@ -92,6 +93,20 @@ it('skips existing accounts unless updating is requested, and never removes memb
     $existing->refresh();
     expect($existing->first_name)->toBe('Anna')
         ->and($existing->groups()->pluck('name')->sort()->values()->all())->toBe(['Matematyka', 'Wolontariat']);
+});
+
+it('joins an account from another school without overwriting personal data', function () {
+    $other = School::factory()->create();
+    $existing = member(['email' => 'anna@szkola.edu.pl', 'first_name' => 'Anna', 'last_name' => 'Prawdziwa'], $other);
+
+    $path = csvFile("imie;nazwisko;email;rola;grupy\nFałszywa;Zmiana;anna@szkola.edu.pl;teacher;Matematyka\n");
+    app(ImportUsersFromCsv::class)->handle($path, dryRun: false);
+
+    $existing->refresh();
+    expect($existing->last_name)->toBe('Prawdziwa')
+        ->and($existing->belongsToSchool($this->school))->toBeTrue()
+        ->and($existing->belongsToSchool($other))->toBeTrue()
+        ->and($existing->schoolGroups()->pluck('name')->all())->toBe(['Matematyka']);
 });
 
 it('runs the import from the Livewire screen and e-mails new people', function () {

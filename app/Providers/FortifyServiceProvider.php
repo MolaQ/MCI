@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use App\Actions\Fortify\ResetUserPassword;
 use App\Actions\Fortify\UpdateUserPassword;
+use App\Enums\UserStatus;
 use App\Models\User;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
@@ -34,7 +35,9 @@ class FortifyServiceProvider extends ServiceProvider
 
             if (! $user->status->canLogIn()) {
                 throw ValidationException::withMessages([
-                    Fortify::username() => __('Twoje konto zostało zawieszone. Skontaktuj się z administratorem.'),
+                    Fortify::username() => $user->status === UserStatus::Invited
+                        ? __('Konto nie jest jeszcze aktywne. Potwierdź adres e-mail linkiem z wiadomości.')
+                        : __('Twoje konto zostało zawieszone. Skontaktuj się z administratorem.'),
                 ]);
             }
 

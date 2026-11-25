@@ -34,6 +34,7 @@ enum Role: string
                 Permission::AlertsSendDrill,
                 Permission::AlertsViewAllStats,
                 Permission::EventsCreate,
+                Permission::EventsPublishPublic,
                 Permission::TasksAssignAny,
                 Permission::StatsView,
                 Permission::AuditView,

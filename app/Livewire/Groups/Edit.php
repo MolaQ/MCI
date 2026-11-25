@@ -6,6 +6,7 @@ use App\Enums\GroupType;
 use App\Enums\MembershipMode;
 use App\Models\Group;
 use App\Support\Audit;
+use App\Support\CurrentSchool;
 use Flux\Flux;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rule;
@@ -51,7 +52,7 @@ class Edit extends Component
             'description' => ['nullable', 'string', 'max:2000'],
             'color' => ['nullable', 'regex:/^#[0-9a-fA-F]{6}$/'],
             'membership_mode' => ['required', Rule::enum(MembershipMode::class)],
-            'parent_id' => ['nullable', 'integer', Rule::exists('groups', 'id')->whereNull('deleted_at'), Rule::notIn([$this->group?->id])],
+            'parent_id' => ['nullable', 'integer', Rule::exists('groups', 'id')->whereNull('deleted_at')->where('school_id', app(CurrentSchool::class)->id()), Rule::notIn([$this->group?->id])],
         ];
     }
 
@@ -104,7 +105,7 @@ class Edit extends Component
         return view('livewire.groups.edit', [
             'types' => GroupType::cases(),
             'modes' => MembershipMode::cases(),
-            'parents' => Group::query()->when($this->group, fn ($q) => $q->whereKeyNot($this->group->id))->orderBy('name')->get(['id', 'name']),
+            'parents' => Group::query()->inCurrentSchool()->when($this->group, fn ($q) => $q->whereKeyNot($this->group->id))->orderBy('name')->get(['id', 'name']),
             'canChangeStructure' => Auth::user()->can('create', Group::class),
         ])->title($this->group ? $this->group->name : __('Nowa grupa'));
     }

@@ -27,7 +27,7 @@ class Index extends Component
     {
         $user = Auth::user();
 
-        return Group::query()
+        return Group::query()->inCurrentSchool()
             ->withCount('members')
             ->with(['leaders:id,first_name,last_name'])
             ->unless($user->can(Permission::GroupsManage->value), fn (Builder $q) => $q->where(fn (Builder $w) => $w
@@ -43,7 +43,7 @@ class Index extends Component
     #[Computed]
     public function myGroupIds(): array
     {
-        return Auth::user()->groups()->pluck('groups.id')->all();
+        return Auth::user()->schoolGroups()->pluck('groups.id')->all();
     }
 
     public function render()

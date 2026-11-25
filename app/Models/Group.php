@@ -6,6 +6,7 @@ use App\Enums\GroupRole;
 use App\Enums\GroupType;
 use App\Enums\MembershipMode;
 use App\Support\Appearance;
+use App\Support\CurrentSchool;
 use Database\Factories\GroupFactory;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -30,6 +31,7 @@ class Group extends Model
     use HasFactory, SoftDeletes;
 
     protected $fillable = [
+        'school_id',
         'parent_id',
         'name',
         'slug',
@@ -53,17 +55,18 @@ class Group extends Model
     protected static function booted(): void
     {
         static::creating(function (Group $group) {
-            $group->slug ??= static::uniqueSlug($group->name);
+            $group->school_id ??= app(CurrentSchool::class)->id();
+            $group->slug ??= static::uniqueSlug($group->name, $group->school_id);
         });
     }
 
-    public static function uniqueSlug(string $name): string
+    public static function uniqueSlug(string $name, ?int $schoolId): string
     {
         $base = Str::slug($name) ?: 'grupa';
         $slug = $base;
         $i = 2;
 
-        while (static::withTrashed()->where('slug', $slug)->exists()) {
+        while (static::withTrashed()->where('school_id', $schoolId)->where('slug', $slug)->exists()) {
             $slug = "{$base}-{$i}";
             $i++;
         }
@@ -82,6 +85,16 @@ class Group extends Model
     public function leaders(): BelongsToMany
     {
         return $this->members()->wherePivot('role', GroupRole::Leader->value);
+    }
+
+    public function school(): BelongsTo
+    {
+        return $this->belongsTo(School::class);
+    }
+
+    public function scopeInCurrentSchool(Builder $query): void
+    {
+        $query->where('groups.school_id', app(CurrentSchool::class)->id());
     }
 
     public function parent(): BelongsTo

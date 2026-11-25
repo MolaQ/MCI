@@ -5,15 +5,22 @@ namespace Database\Seeders;
 use App\Enums\GroupType;
 use App\Enums\MembershipMode;
 use App\Models\Group;
+use App\Models\School;
 use Illuminate\Database\Seeder;
 
 /**
- * Starter groups for a typical Polish vocational school. Idempotent by slug;
- * everything except the system group can be renamed or deleted later.
+ * Starter groups for every school (typical Polish vocational school).
+ * Idempotent by (school, slug); everything except the system group can be
+ * renamed or deleted later.
  */
 class SystemGroupsSeeder extends Seeder
 {
     public function run(): void
+    {
+        School::query()->each(fn (School $school) => static::seedFor($school));
+    }
+
+    public static function seedFor(School $school): void
     {
         $groups = [
             ['slug' => 'wszyscy-pracownicy', 'name' => 'Wszyscy pracownicy', 'type' => GroupType::Staff, 'is_system' => true],
@@ -28,12 +35,12 @@ class SystemGroupsSeeder extends Seeder
         ];
 
         foreach ($groups as $g) {
-            Group::withTrashed()->updateOrCreate(['slug' => $g['slug']], [
+            Group::withTrashed()->firstOrCreate(['school_id' => $school->id, 'slug' => $g['slug']], [
                 'name' => $g['name'],
                 'type' => $g['type'],
                 'is_system' => $g['is_system'] ?? false,
                 'membership_mode' => $g['mode'] ?? MembershipMode::Managed,
-                'parent_id' => isset($g['parent']) ? Group::query()->where('slug', $g['parent'])->value('id') : null,
+                'parent_id' => isset($g['parent']) ? Group::query()->where('school_id', $school->id)->where('slug', $g['parent'])->value('id') : null,
             ]);
         }
     }

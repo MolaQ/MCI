@@ -23,6 +23,12 @@ return new class extends Migration
             $table->string('status', 20)->default('invited')->index();
             $table->string('locale', 5)->default('pl');
             $table->json('notification_prefs')->nullable();
+            // Platform operator (schools, updates, backups, site journal). Not grantable by a school.
+            $table->boolean('is_site_admin')->default(false);
+            // The person's own choice; capped by school policy (see docs/ARCHITECTURE.md §3.0.3).
+            $table->string('profile_visibility', 20)->default('school');
+            $table->json('profile_fields')->nullable();
+            $table->unsignedBigInteger('last_school_id')->nullable();
             $table->timestamp('last_seen_at')->nullable();
             $table->foreignId('created_by')->nullable()->constrained('users')->nullOnDelete();
             $table->rememberToken();

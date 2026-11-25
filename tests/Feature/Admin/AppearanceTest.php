@@ -6,13 +6,14 @@ use App\Support\Appearance as AppearanceService;
 use App\Support\Settings;
 use Livewire\Livewire;
 
-it('is restricted to settings managers', function () {
-    $this->actingAs(userWithRole(Role::Coordinator))->get(route('admin.appearance'))->assertForbidden();
-    $this->actingAs(admin())->get(route('admin.appearance'))->assertOk();
+it('is restricted to site admins', function () {
+    $this->actingAs(userWithRole(Role::Coordinator))->get(route('site.appearance'))->assertForbidden();
+    $this->actingAs(admin())->get(route('site.appearance'))->assertForbidden();
+    $this->actingAs(siteAdmin())->get(route('site.appearance'))->assertOk();
 });
 
 it('saves the theme and emits it as CSS variables for every page', function () {
-    $this->actingAs(admin());
+    $this->actingAs(siteAdmin());
 
     Livewire::test(Appearance::class)
         ->set('school_name', 'Zespół Szkół Mechanicznych')
@@ -31,7 +32,7 @@ it('saves the theme and emits it as CSS variables for every page', function () {
 });
 
 it('rejects unsafe colour values', function () {
-    $this->actingAs(admin());
+    $this->actingAs(siteAdmin());
 
     Livewire::test(Appearance::class)
         ->set('primary_color', 'red}body{display:none')

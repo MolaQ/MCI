@@ -3,14 +3,18 @@
 namespace App\Domain\Users\Actions;
 
 use App\Domain\Groups\Actions\SyncUserGroups;
+use App\Enums\SchoolMemberStatus;
 use App\Enums\UserStatus;
 use App\Models\User;
 use App\Support\Audit;
+use App\Support\CurrentSchool;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 
 /**
- * Create or update a user account from the admin form / CSV import.
+ * Create or update a user account from the admin form / CSV import, in
+ * the context of the active school: the account is added to that school,
+ * roles / permissions / groups are changed only within that school.
  *
  * $data keys: first_name, last_name, email, phone, status, roles (list of
  * role names), permissions (direct permission names, optional),
@@ -18,7 +22,7 @@ use Illuminate\Support\Facades\DB;
  */
 class SaveUser
 {
-    public function __construct(private SyncUserGroups $syncGroups) {}
+    public function __construct(private SyncUserGroups $syncGroups, private CurrentSchool $current) {}
 
     /**
      * @param  array<string, mixed>  $data
@@ -41,6 +45,18 @@ class SaveUser
             }
 
             $user->save();
+
+            if ($school = $this->current->get()) {
+                if (! $user->schools()->whereKey($school->id)->exists()) {
+                    $user->schools()->attach($school->id, [
+                        'status' => SchoolMemberStatus::Active->value,
+                        'joined_via' => $data['joined_via'] ?? 'admin',
+                    ]);
+                    if (! $creating) {
+                        Audit::log('school.member_added', $user);
+                    }
+                }
+            }
 
             if (array_key_exists('roles', $data)) {
                 $oldRoles = $creating ? [] : $user->getRoleNames()->all();

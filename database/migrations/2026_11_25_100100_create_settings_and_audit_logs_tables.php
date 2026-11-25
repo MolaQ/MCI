@@ -17,12 +17,17 @@ return new class extends Migration
 
         Schema::create('audit_logs', function (Blueprint $table) {
             $table->id();
+            // null = site journal (Dziennik witryny), set = school log (Logi szkoły)
+            $table->foreignId('school_id')->nullable()->constrained()->nullOnDelete();
             $table->foreignId('actor_id')->nullable()->constrained('users')->nullOnDelete();
             $table->string('action', 100)->index();
             $table->nullableMorphs('subject');
             $table->json('properties')->nullable();
             $table->string('ip', 45)->nullable();
             $table->timestamp('created_at')->useCurrent()->index();
+
+            $table->index(['school_id', 'created_at']);
+            $table->index(['school_id', 'action']);
         });
     }
 
