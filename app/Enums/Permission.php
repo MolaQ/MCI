@@ -24,6 +24,7 @@ enum Permission: string
     case StatsView = 'stats.view';
     case AuditView = 'audit.view';
     case SettingsManage = 'settings.manage';
+    case CategoriesManage = 'categories.manage';
 
     public function label(): string
     {

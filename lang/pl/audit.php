@@ -44,4 +44,14 @@ return [
         'appearance_updated' => 'Zmieniono wygląd',
         'appearance_reset' => 'Przywrócono domyślny wygląd',
     ],
+    'catalog' => [
+        'created' => 'Dodano kategorię lub typ',
+        'updated' => 'Zmieniono kategorię lub typ',
+        'reordered' => 'Zmieniono kolejność kategorii lub typów',
+        'archived' => 'Zarchiwizowano kategorię lub typ',
+        'restored' => 'Przywrócono kategorię lub typ',
+        'deleted' => 'Usunięto kategorię lub typ',
+        'hidden' => 'Ukryto wspólną kategorię lub typ w szkole',
+        'shown' => 'Pokazano wspólną kategorię lub typ w szkole',
+    ],
 ];

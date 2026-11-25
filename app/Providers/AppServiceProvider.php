@@ -9,12 +9,14 @@ use App\Models\Event;
 use App\Models\Group;
 use App\Models\Invite;
 use App\Models\School;
+use App\Models\TaxonomyTerm;
 use App\Models\User;
 use App\Support\Appearance;
 use App\Support\CurrentSchool;
 use App\Support\Features;
 use App\Support\Push;
 use App\Support\Settings;
+use App\Support\Taxonomy;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\Relation;
@@ -35,6 +37,7 @@ class AppServiceProvider extends ServiceProvider
         $this->app->singleton(Settings::class);
         $this->app->singleton(Appearance::class);
         $this->app->scoped(Features::class);
+        $this->app->scoped(Taxonomy::class);
         $this->app->scoped(CurrentSchool::class);
     }
 
@@ -49,6 +52,7 @@ class AppServiceProvider extends ServiceProvider
             'invite' => Invite::class,
             'announcement' => Announcement::class,
             'event' => Event::class,
+            'taxonomy_term' => TaxonomyTerm::class,
         ]);
 
         // Site admins and school admins pass every *permission* check (dotted

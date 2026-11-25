@@ -64,6 +64,7 @@ return [
         'stats_view' => 'Podgląd statystyk',
         'audit_view' => 'Podgląd dziennika zdarzeń',
         'settings_manage' => 'Ustawienia systemu i wygląd',
+        'categories_manage' => 'Kategorie wydarzeń i typy grup',
     ],
 
     'announcement_priority' => [

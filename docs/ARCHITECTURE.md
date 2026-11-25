@@ -415,6 +415,14 @@ Indexes: `(status, due_date)` for overdue scans, `(event_id, stage_id, position)
 
 ---
 
+### 3.8 Editable event categories and group types
+
+**`taxonomy_terms`** — `kind` (`event_category` | `group_type`), `school_id` (null = site-wide list), `key` (unique per kind and list, never changes), `name`, `icon` (monochrome Heroicon from a fixed list), `color` (group types only), `position`, `is_active`. `events.category` and `groups.type` store the key; the built-in keys are inserted as site-wide terms by the migration, so old data stays valid.
+
+- A school sees the site-wide list minus the keys it hid (`schools.settings.taxonomy_hidden.{kind}`) plus its own terms. Own terms and hiding need the feature switches `events.school_categories` / `groups.school_types` (site-controlled, on by default).
+- Archived terms are not offered for new records; records already using them keep showing them. Only unused terms can be deleted.
+- Screens: *Witryna → Kategorie i typy* (site admin) and *Administracja → Kategorie i typy* (permission `categories.manage`). Logic in `App\Domain\Catalog\Actions\ManageTerms`; every change is logged (`catalog.*`) in Dziennik witryny or Logi szkoły.
+
 ## 4. Permission & group model
 
 Four layers, checked together in Laravel **Policies**:
@@ -680,6 +688,11 @@ Later / optional: students role, SMS gateway fallback, Google/Microsoft SSO, mob
 - **Communication centre**: composer with pill quick-selectors (cała szkoła, roles, my groups, any group, + subgroups, people chips), live reach count, priority, confirmation, pin, schedule, expiry presets, public switch with preview; inbox with filters (wszystkie / nieprzeczytane / ważne / do potwierdzenia / wzmianki / wysłane), this school vs all my schools, search, "oznacz wszystkie"; detail page with read/confirm statistics and people lists for the author; bell with unread count; polling every `MCI_FEED_POLL_SECONDS` (20 s) with `wire:poll.visible`.
 - **Editor & mentions**: Tiptap loaded lazily (main bundle ≈6 KB), server-side HTML allow-list (`App\Support\RichText`), `App\Support\Mentions` re-resolves every mention in the school (labels rewritten, outsiders become text) and is reusable by any model.
 - Tests: audience union/dedup, guard denials, mention forgery, group-mention rule, sanitizer, bell rules, scheduled delivery, read/confirm, inbox filters, public 404s and column safety, iCal, profile permissions.
+
+### Categories and the public information centre (after Step 4)
+
+- Event categories and group types are editable lists (§3.8) instead of fixed enums.
+- The public front is an information centre: identity with a live summary (schools, today, next 7 days, announcements) and quick actions (log in, join with a code, TV); one row of dropdown pill filters (school, category with counts, time frame); a featured grid (next event, pinned announcements first, then two rows of event cards with "Pokaż więcej"); a school directory whose cards open a side panel with offers, upcoming events and the school's iCal feed (`/szkoly/{slug}/kalendarz.ics`).
 
 ### What Step 4 delivered
 

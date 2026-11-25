@@ -3,9 +3,10 @@
 namespace App\Livewire\Events;
 
 use App\Enums\ContentVisibility;
-use App\Enums\EventCategory;
+use App\Enums\TaxonomyKind;
 use App\Models\Event;
 use App\Support\CurrentSchool;
+use App\Support\Taxonomy;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Title;
@@ -47,7 +48,7 @@ class Index extends Component
             ->when($this->scope === 'school', fn ($q) => $q->where('school_id', $schoolId))
             ->when($this->scope === 'partners', fn ($q) => $q->where('school_id', '!=', $schoolId)->where('visibility', '!=', ContentVisibility::SchoolOnly->value))
             ->when($this->scope === 'public', fn ($q) => $q->where('visibility', ContentVisibility::Public->value))
-            ->when(EventCategory::tryFrom($this->category), fn ($q, $c) => $q->where('category', $c->value))
+            ->when($this->category !== '', fn ($q) => $q->where('category', $this->category))
             ->when($this->when === 'upcoming', fn ($q) => $q->upcoming()->orderBy('starts_at'))
             ->when($this->when === 'week', fn ($q) => $q->whereBetween('starts_at', [now()->startOfDay(), now()->endOfWeek()])->orderBy('starts_at'))
             ->when($this->when === 'month', fn ($q) => $q->whereBetween('starts_at', [now()->startOfDay(), now()->endOfMonth()])->orderBy('starts_at'))
@@ -58,7 +59,7 @@ class Index extends Component
     public function render()
     {
         return view('livewire.events.index', [
-            'categories' => EventCategory::cases(),
+            'categories' => app(Taxonomy::class)->options(TaxonomyKind::EventCategory, app(CurrentSchool::class)->get()),
             'canCreate' => Auth::user()->can('create', Event::class),
         ]);
     }
