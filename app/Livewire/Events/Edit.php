@@ -2,8 +2,10 @@
 
 namespace App\Livewire\Events;
 
+use App\Domain\Media\Actions\ReplaceImage;
 use App\Enums\ContentVisibility;
 use App\Enums\EventCategory;
+use App\Livewire\Concerns\WithImageUploads;
 use App\Models\Event;
 use App\Support\Audit;
 use App\Support\CurrentSchool;
@@ -16,6 +18,13 @@ use Livewire\Component;
 
 class Edit extends Component
 {
+    use WithImageUploads;
+
+    public $coverUpload = null;
+
+    #[Locked]
+    public ?string $coverUrl = null;
+
     #[Locked]
     public ?int $eventId = null;
 
@@ -48,7 +57,9 @@ class Edit extends Component
         if ($event?->exists) {
             $this->authorize('update', $event);
             $this->eventId = $event->id;
-            $this->fill($event->only(['title', 'location', 'all_day']));
+            $this->title = $event->title;
+            $this->location = (string) $event->location;
+            $this->all_day = (bool) $event->all_day;
             $this->category = $event->category->value;
             $this->visibility = $event->visibility->value;
             $this->description = (string) $event->description;
@@ -58,6 +69,7 @@ class Edit extends Component
             $this->end_date = $event->ends_at?->format('Y-m-d') ?? '';
             $this->end_time = $event->ends_at && ! $event->all_day ? $event->ends_at->format('H:i') : '';
             $this->cancelled = $event->status === 'cancelled';
+            $this->coverUrl = $event->cover?->url();
         } else {
             $this->authorize('create', Event::class);
             $this->date = now()->addWeek()->format('Y-m-d');
@@ -78,6 +90,7 @@ class Edit extends Component
             'visibility' => ['required', Rule::in(array_map(fn ($v) => $v->value, ContentVisibility::selectable()))],
             'description' => ['nullable', 'string', 'max:5000'],
             'public_description' => ['nullable', 'string', 'max:3000'],
+            'coverUpload' => $this->imageUploadRule(),
         ];
     }
 
@@ -130,9 +143,27 @@ class Edit extends Component
             Audit::log('event.created', $event, ['title' => $event->title, 'visibility' => $event->visibility->value]);
         }
 
+        // The cover may leave the building only together with a public event.
+        $public = $event->visibility === ContentVisibility::Public;
+        app(ReplaceImage::class)->handle($event, 'cover_media_id', $this->coverUpload, 'cover', $public, Auth::user(), 'coverUpload');
+        ReplaceImage::syncVisibility($event->cover_media_id, $public);
+
         Flux::toast(variant: 'success', text: __('Zapisano wydarzenie.'));
 
         return $this->redirectRoute('events.show', $event, navigate: true);
+    }
+
+    public function updatedCoverUpload(): void
+    {
+        $this->validateOnly('coverUpload');
+    }
+
+    public function removeCover(ReplaceImage $replace): void
+    {
+        $event = Event::query()->findOrFail($this->eventId);
+        $this->authorize('update', $event);
+        $replace->handle($event, 'cover_media_id', null, 'cover', false, Auth::user(), 'coverUpload', remove: true);
+        $this->coverUrl = null;
     }
 
     public function delete()

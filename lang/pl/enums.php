@@ -14,6 +14,8 @@ return [
         'class' => 'Klasa',
         'volunteering' => 'Wolontariat',
         'sport' => 'Sport',
+        'club' => 'Koło / klub',
+        'association' => 'Stowarzyszenie',
         'custom' => 'Inna',
     ],
     'group_role' => [

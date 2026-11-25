@@ -10,13 +10,9 @@
                     <flux:input wire:model="short_name" :label="__('Skrót')" />
                 </div>
 
-                <div class="flex flex-wrap items-end gap-4">
-                    <flux:input type="file" wire:model="logo" accept="image/png,image/jpeg,image/webp" :label="__('Logo (PNG/JPG/WebP, maks. 1 MB)')" class="max-w-sm" />
-                    @if ($logo_path)
-                        <img src="{{ \Illuminate\Support\Facades\Storage::disk('public')->url($logo_path) }}" alt="" class="h-10 w-auto" />
-                        <flux:button size="sm" variant="ghost" wire:click="removeLogo">{{ __('Usuń logo') }}</flux:button>
-                    @endif
-                </div>
+                <x-ui.image-editor model="logo" :label="__('Logo systemu')" :current="$logoUrl" remove="removeLogo"
+                                   :presets="['free', '1:1', '3:1', '4:1']" :max-size="1024"
+                                   :hint="__('Kadrowanie, obrót i usuwanie tła w edytorze. PNG, JPG, WebP lub GIF; zapisujemy jako WebP z przezroczystością.')" />
             </flux:card>
 
             <flux:card class="space-y-5">

@@ -1,10 +1,12 @@
 import mciEditor from './editor.js';
+import mciImageEditor from './image-editor.js';
 
 /*
  * Small Alpine helpers. Livewire ships Alpine; we only register components.
  */
 document.addEventListener('alpine:init', () => {
     window.Alpine.data('mciEditor', mciEditor);
+    window.Alpine.data('mciImageEditor', mciImageEditor);
 
     // Full-screen / TV toggle with one-key exit (docs/ARCHITECTURE.md §12.3).
     window.Alpine.data('mciFullscreen', () => ({

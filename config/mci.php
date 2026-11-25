@@ -89,6 +89,26 @@ return [
         'radius' => 'md',
         'default_theme' => 'system',
         'logo_path' => null,
+        'logo_media_id' => null,
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Media (images). Files are re-encoded with GD (metadata stripped) and
+    | downscaled per collection; WebP with alpha when GD supports it.
+    |--------------------------------------------------------------------------
+    */
+
+    'media' => [
+        'max_upload_kb' => (int) env('MCI_MEDIA_MAX_UPLOAD_KB', 8192),
+        'max_pixels' => 40_000_000,
+        'quality' => 85,
+        'max_post_images' => 6,
+        'collections' => [
+            'logo' => 1024,
+            'cover' => 2000,
+            'image' => 2000,
+        ],
     ],
 
 ];

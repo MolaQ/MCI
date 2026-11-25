@@ -2,8 +2,10 @@
 
 namespace App\Livewire\Groups;
 
+use App\Domain\Media\Actions\ReplaceImage;
 use App\Enums\GroupType;
 use App\Enums\MembershipMode;
+use App\Livewire\Concerns\WithImageUploads;
 use App\Models\Group;
 use App\Support\Audit;
 use App\Support\CurrentSchool;
@@ -14,6 +16,10 @@ use Livewire\Component;
 
 class Edit extends Component
 {
+    use WithImageUploads;
+
+    public $logoUpload = null;
+
     public ?Group $group = null;
 
     public string $name = '';
@@ -52,6 +58,7 @@ class Edit extends Component
             'description' => ['nullable', 'string', 'max:2000'],
             'color' => ['nullable', 'regex:/^#[0-9a-fA-F]{6}$/'],
             'membership_mode' => ['required', Rule::enum(MembershipMode::class)],
+            'logoUpload' => $this->imageUploadRule(),
             'parent_id' => ['nullable', 'integer', Rule::exists('groups', 'id')->whereNull('deleted_at')->where('school_id', app(CurrentSchool::class)->id()), Rule::notIn([$this->group?->id]), $this->noCycle(...)],
         ];
     }
@@ -85,6 +92,7 @@ class Edit extends Component
     {
         $this->authorize($this->group ? 'update' : 'create', $this->group ?? Group::class);
         $data = $this->validate();
+        unset($data['logoUpload']);
         $data['color'] = $data['color'] ?: null;
         $data['description'] = $data['description'] ?: null;
 
@@ -102,9 +110,25 @@ class Edit extends Component
             Audit::log('group.created', $group, ['name' => $group->name]);
         }
 
+        if ($this->logoUpload) {
+            app(ReplaceImage::class)->handle($group, 'logo_media_id', $this->logoUpload, 'logo', false, Auth::user(), 'logoUpload');
+        }
+
         Flux::toast(variant: 'success', text: __('Zapisano grupę.'));
 
         return $this->redirectRoute('groups.show', $group, navigate: true);
+    }
+
+    public function updatedLogoUpload(): void
+    {
+        $this->validateOnly('logoUpload');
+    }
+
+    public function removeLogo(ReplaceImage $replace): void
+    {
+        $this->authorize('update', $this->group);
+        $replace->handle($this->group, 'logo_media_id', null, 'logo', false, Auth::user(), 'logoUpload', remove: true);
+        Flux::toast(text: __('Usunięto logo grupy.'));
     }
 
     public function delete()

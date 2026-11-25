@@ -24,7 +24,7 @@ class Event extends Model
     use HasFactory, SoftDeletes;
 
     /** Fields that may ever leave the building (public pages, iCal, TV). */
-    public const PUBLIC_COLUMNS = ['id', 'school_id', 'title', 'public_description', 'category', 'starts_at', 'ends_at', 'all_day', 'location', 'visibility', 'status'];
+    public const PUBLIC_COLUMNS = ['id', 'school_id', 'title', 'public_description', 'category', 'starts_at', 'ends_at', 'all_day', 'location', 'visibility', 'status', 'cover_media_id'];
 
     protected $fillable = [
         'school_id', 'owner_id', 'title', 'description', 'public_description', 'category',
@@ -45,6 +45,11 @@ class Event extends Model
     public function school(): BelongsTo
     {
         return $this->belongsTo(School::class);
+    }
+
+    public function cover(): BelongsTo
+    {
+        return $this->belongsTo(Media::class, 'cover_media_id');
     }
 
     public function owner(): BelongsTo

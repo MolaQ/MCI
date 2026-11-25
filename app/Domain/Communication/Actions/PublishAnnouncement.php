@@ -4,6 +4,7 @@ namespace App\Domain\Communication\Actions;
 
 use App\Domain\Communication\Audience;
 use App\Domain\Communication\AudienceGuard;
+use App\Domain\Media\Actions\StoreImage;
 use App\Enums\AnnouncementPriority;
 use App\Enums\Permission;
 use App\Jobs\DeliverAnnouncement;
@@ -16,7 +17,9 @@ use App\Support\Mentions;
 use App\Support\RichText;
 use Carbon\CarbonImmutable;
 use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 
 /**
@@ -31,14 +34,15 @@ use Illuminate\Validation\ValidationException;
  */
 class PublishAnnouncement
 {
-    public function __construct(private AudienceGuard $guard) {}
+    public function __construct(private AudienceGuard $guard, private StoreImage $storeImage) {}
 
     /**
      * @param  array{title: string, body: string, priority?: string, requires_confirmation?: bool,
      *               is_public?: bool, publish_at?: mixed, expires_at?: mixed, pinned?: bool}  $data
      * @param  iterable<string>  $audienceKeys
+     * @param  list<UploadedFile>  $images  shown under the text, in this order
      */
-    public function handle(User $author, School $school, array $data, iterable $audienceKeys): Announcement
+    public function handle(User $author, School $school, array $data, iterable $audienceKeys, array $images = []): Announcement
     {
         if (! $this->guard->canPublish($author)) {
             throw new AuthorizationException(__('Nie masz uprawnień do wysyłania komunikatów.'));
@@ -81,43 +85,62 @@ class PublishAnnouncement
             throw ValidationException::withMessages(['expires_at' => __('Data wygaśnięcia musi być późniejsza niż publikacja.')]);
         }
 
-        $announcement = DB::transaction(function () use ($author, $school, $data, $mentions, $audience, $recipients, $mentionIds, $isPublic, $publishAt, $expiresAt) {
-            $announcement = Announcement::query()->create([
-                'school_id' => $school->id,
-                'author_id' => $author->id,
-                'title' => trim($data['title']),
-                'body' => $mentions['html'],
-                'priority' => AnnouncementPriority::tryFrom($data['priority'] ?? 'normal') ?? AnnouncementPriority::Normal,
-                'requires_confirmation' => (bool) ($data['requires_confirmation'] ?? false),
-                'is_public' => $isPublic,
-                'published_at' => $publishAt,
-                'expires_at' => $expiresAt,
-                'pinned_until' => ($data['pinned'] ?? false) ? ($expiresAt ?? $publishAt->addDays(7)) : null,
-                'recipients_count' => $recipients->count(),
-            ]);
+        if (count($images) > config('mci.media.max_post_images')) {
+            throw ValidationException::withMessages(['images' => __('Możesz dodać najwyżej :count obrazów.', ['count' => config('mci.media.max_post_images')])]);
+        }
 
-            $announcement->audience()->createMany($audience->rows());
-            Mentions::sync($announcement, $mentions['users'], $mentions['groups'], $school, $author);
+        $stored = [];
+        try {
+            $announcement = DB::transaction(function () use ($author, $school, $data, $mentions, $audience, $recipients, $mentionIds, $isPublic, $publishAt, $expiresAt, $images, &$stored) {
+                $announcement = Announcement::query()->create([
+                    'school_id' => $school->id,
+                    'author_id' => $author->id,
+                    'title' => trim($data['title']),
+                    'body' => $mentions['html'],
+                    'priority' => AnnouncementPriority::tryFrom($data['priority'] ?? 'normal') ?? AnnouncementPriority::Normal,
+                    'requires_confirmation' => (bool) ($data['requires_confirmation'] ?? false),
+                    'is_public' => $isPublic,
+                    'published_at' => $publishAt,
+                    'expires_at' => $expiresAt,
+                    'pinned_until' => ($data['pinned'] ?? false) ? ($expiresAt ?? $publishAt->addDays(7)) : null,
+                    'recipients_count' => $recipients->count(),
+                ]);
 
-            $mentioned = $mentionIds->flip();
-            foreach ($recipients->chunk(1000) as $chunk) {
-                DB::table('announcement_recipients')->insert($chunk->map(fn ($id) => [
-                    'announcement_id' => $announcement->id,
-                    'user_id' => $id,
-                    'reason' => $mentioned->has($id) ? 'mention' : 'audience',
-                ])->all());
-            }
+                $announcement->audience()->createMany($audience->rows());
 
-            Audit::log('announcement.published', $announcement, [
-                'title' => $announcement->title,
-                'recipients' => $recipients->count(),
-                'targets' => $audience->rows(),
-                'public' => $isPublic,
-                'scheduled' => $publishAt->isFuture() ? $publishAt->toIso8601String() : null,
-            ], $author, $school->id);
+                foreach (array_values($images) as $i => $file) {
+                    $media = $this->storeImage->handle($file, 'image', $school->id, $author, $announcement, $isPublic, 'images.'.$i);
+                    $media->update(['position' => $i]);
+                    $stored[] = $media->path;
+                }
+                Mentions::sync($announcement, $mentions['users'], $mentions['groups'], $school, $author);
 
-            return $announcement;
-        });
+                $mentioned = $mentionIds->flip();
+                foreach ($recipients->chunk(1000) as $chunk) {
+                    DB::table('announcement_recipients')->insert($chunk->map(fn ($id) => [
+                        'announcement_id' => $announcement->id,
+                        'user_id' => $id,
+                        'reason' => $mentioned->has($id) ? 'mention' : 'audience',
+                    ])->all());
+                }
+
+                Audit::log('announcement.published', $announcement, [
+                    'title' => $announcement->title,
+                    'recipients' => $recipients->count(),
+                    'targets' => $audience->rows(),
+                    'public' => $isPublic,
+                    'scheduled' => $publishAt->isFuture() ? $publishAt->toIso8601String() : null,
+                    'images' => count($stored),
+                ], $author, $school->id);
+
+                return $announcement;
+            });
+        } catch (\Throwable $e) {
+            // The rows rolled back with the transaction; remove the files too.
+            Storage::disk('media')->delete($stored);
+
+            throw $e;
+        }
 
         if (! $publishAt->isFuture()) {
             DeliverAnnouncement::dispatch($announcement->id)->afterCommit();

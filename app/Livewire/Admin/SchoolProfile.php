@@ -2,8 +2,10 @@
 
 namespace App\Livewire\Admin;
 
+use App\Domain\Media\Actions\ReplaceImage;
 use App\Enums\Permission;
 use App\Enums\SchoolOfferKind;
+use App\Livewire\Concerns\WithImageUploads;
 use App\Models\School;
 use App\Models\SchoolOffer;
 use App\Support\Audit;
@@ -22,6 +24,10 @@ use Livewire\Component;
 #[Title('Profil publiczny szkoły')]
 class SchoolProfile extends Component
 {
+    use WithImageUploads;
+
+    public $logoUpload = null;
+
     public string $tagline = '';
 
     public string $description = '';
@@ -49,7 +55,7 @@ class SchoolProfile extends Component
         foreach (['tagline', 'description', 'address', 'phone', 'public_email', 'website'] as $field) {
             $this->{$field} = (string) $school->{$field};
         }
-        $this->is_listed = $school->is_listed;
+        $this->is_listed = (bool) ($school->is_listed ?? true);
     }
 
     private function authorizeAccess(): void
@@ -68,7 +74,19 @@ class SchoolProfile extends Component
         return $this->school()->offers()->get();
     }
 
-    public function save(): void
+    public function updatedLogoUpload(): void
+    {
+        $this->validateOnly('logoUpload', ['logoUpload' => $this->imageUploadRule()]);
+    }
+
+    public function removeLogo(ReplaceImage $replace): void
+    {
+        $this->authorizeAccess();
+        $replace->handle($this->school(), 'logo_media_id', null, 'logo', true, Auth::user(), 'logoUpload', remove: true);
+        Flux::toast(text: __('Usunięto logo szkoły.'));
+    }
+
+    public function save(ReplaceImage $replace): void
     {
         $this->authorizeAccess();
         $data = $this->validate([
@@ -79,11 +97,18 @@ class SchoolProfile extends Component
             'public_email' => ['nullable', 'email', 'max:191'],
             'website' => ['nullable', 'url:https,http', 'max:191'],
             'is_listed' => ['boolean'],
+            'logoUpload' => $this->imageUploadRule(),
         ]);
+        unset($data['logoUpload']);
 
         $school = $this->school();
         $school->update(array_map(fn ($v) => is_string($v) ? (trim($v) ?: null) : $v, $data));
         Audit::log('school.public_profile_updated', $school, ['changed' => array_keys($school->getChanges())]);
+
+        if ($this->logoUpload) {
+            $replace->handle($school, 'logo_media_id', $this->logoUpload, 'logo', true, Auth::user(), 'logoUpload');
+            $this->logoUpload = null;
+        }
 
         Flux::toast(variant: 'success', text: __('Zapisano profil publiczny.'));
     }

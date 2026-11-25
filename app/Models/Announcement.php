@@ -47,6 +47,12 @@ class Announcement extends Model
         return $this->belongsTo(User::class, 'author_id');
     }
 
+    /** Images attached to the post, in order. */
+    public function images(): MorphMany
+    {
+        return $this->morphMany(Media::class, 'owner')->where('collection', 'image')->orderBy('position');
+    }
+
     public function recipients(): BelongsToMany
     {
         return $this->belongsToMany(User::class, 'announcement_recipients')

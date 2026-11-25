@@ -8,6 +8,9 @@
                     <flux:badge color="red">{{ __('Odwołane') }}</flux:badge>
                 @endif
             </div>
+            @if ($event->cover?->is_public)
+                <img src="{{ $event->cover->url() }}" alt="" width="{{ $event->cover->width }}" height="{{ $event->cover->height }}" class="aspect-video w-full rounded-mci object-cover" />
+            @endif
             <h1 class="text-3xl font-bold text-zinc-900 dark:text-white">{{ $event->title }}</h1>
             <div class="grid gap-3 text-zinc-700 sm:grid-cols-2 dark:text-zinc-200">
                 <div class="flex items-center gap-2"><flux:icon name="calendar" variant="mini" class="text-zinc-400" /> {{ $event->timeLabel() }}</div>

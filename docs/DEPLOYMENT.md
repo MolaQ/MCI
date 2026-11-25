@@ -39,9 +39,10 @@ queue. Moving to a VPS later is a matter of changing `.env`.
    php artisan key:generate
    php artisan migrate --force
    php artisan db:seed --force      # safe to rerun: adds missing roles/permissions, missing starter groups and the first admin only if absent
-   php artisan storage:link
+   php artisan storage:link         # optional: only logos uploaded before the media update use it
    php artisan optimize
    ```
+   Images (logos, covers, post images) live in `storage/app/media` and are served by the app at `/media/…`, so they work even where the host forbids symlinks. Make sure PHP's `upload_max_filesize` and `post_max_size` are at least `MCI_MEDIA_MAX_UPLOAD_KB` (default 8 MB); include `storage/app/media` in backups.
 5. **Cron** (hosting panel → Cron jobs), every minute:
    ```
    * * * * * cd ~/mci && php artisan schedule:run >> /dev/null 2>&1

@@ -9,6 +9,9 @@
         <form wire:submit="save">
             <flux:card class="space-y-4">
                 <flux:heading size="lg">{{ __('Opis i kontakt') }}</flux:heading>
+                <x-ui.image-editor model="logoUpload" :label="__('Logo szkoły')" :current="$school->logoUrl()" remove="removeLogo"
+                                   :presets="['free', '1:1', '3:1', '4:1']" :max-size="1024"
+                                   :hint="__('Widoczne na portalu publicznym, w tablicy TV i w menu szkoły.')" />
                 <flux:input wire:model="tagline" :label="__('Hasło / krótki opis')" :placeholder="__('np. Technikum z tradycją od 1945 roku')" maxlength="200" />
                 <flux:textarea wire:model="description" :label="__('O szkole')" rows="6" />
                 <flux:input wire:model="address" :label="__('Adres')" icon="map-pin" />
