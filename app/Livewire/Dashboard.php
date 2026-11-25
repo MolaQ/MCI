@@ -4,6 +4,7 @@ namespace App\Livewire;
 
 use App\Enums\Permission;
 use App\Enums\UserStatus;
+use App\Models\Event;
 use App\Models\Group;
 use App\Models\User;
 use App\Support\CurrentSchool;
@@ -15,6 +16,28 @@ use Livewire\Component;
 #[Title('Pulpit')]
 class Dashboard extends Component
 {
+    #[Computed]
+    public function latestAnnouncements()
+    {
+        return Auth::user()->announcements()->live()
+            ->where('announcements.school_id', app(CurrentSchool::class)->id())
+            ->with('author')
+            ->orderByRaw('CASE WHEN announcement_recipients.read_at IS NULL THEN 0 ELSE 1 END')
+            ->latest('published_at')
+            ->limit(5)
+            ->get();
+    }
+
+    #[Computed]
+    public function upcomingEvents()
+    {
+        return Event::query()->visibleTo(Auth::user())->upcoming()
+            ->with('school')
+            ->orderBy('starts_at')
+            ->limit(4)
+            ->get();
+    }
+
     #[Computed]
     public function myGroups()
     {

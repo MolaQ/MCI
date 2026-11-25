@@ -16,6 +16,9 @@ return [
 
     'poll_seconds' => (int) env('MCI_POLL_SECONDS', 5),
 
+    // Feeds, notification bell and public boards refresh less often.
+    'feed_poll_seconds' => (int) env('MCI_FEED_POLL_SECONDS', 20),
+
     /*
     |--------------------------------------------------------------------------
     | Queue processing on shared hosting

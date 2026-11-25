@@ -2,13 +2,19 @@
 
 use App\Http\Controllers\InvitePosterController;
 use App\Http\Controllers\JoinController;
+use App\Http\Controllers\MentionSearchController;
+use App\Http\Controllers\PublicContentController;
 use App\Http\Controllers\SwitchSchoolController;
+use App\Livewire\Admin;
 use App\Livewire\Admin\Appearance;
 use App\Livewire\Admin\AuditLog;
 use App\Livewire\Admin\Users;
+use App\Livewire\Communication;
 use App\Livewire\Dashboard;
+use App\Livewire\Events;
 use App\Livewire\Groups;
 use App\Livewire\Invites;
+use App\Livewire\Publicly;
 use App\Livewire\Settings\Profile;
 use App\Livewire\Site;
 use Illuminate\Support\Facades\Route;
@@ -32,8 +38,31 @@ Route::prefix('dolacz')->name('join.')->group(function () {
     });
 });
 
+/*
+| Public front — no login (Step 3). Only "publiclyVisible" data is read here.
+*/
+Route::middleware('throttle:240,1')->group(function () {
+    Route::livewire('/', Publicly\Home::class)->name('home');
+    Route::livewire('/szkoly/{slug}', Publicly\SchoolPage::class)->name('public.school');
+    Route::get('/publiczne/wydarzenia/{event}', [PublicContentController::class, 'event'])->whereNumber('event')->name('public.event');
+    Route::get('/publiczne/wydarzenia/{event}.ics', [PublicContentController::class, 'ics'])->whereNumber('event')->name('public.event.ics');
+    Route::get('/publiczne/komunikaty/{announcement}', [PublicContentController::class, 'announcement'])->whereNumber('announcement')->name('public.announcement');
+    Route::livewire('/tv', Publicly\Board::class)->name('tv');
+});
+
 Route::middleware('auth')->group(function () {
-    Route::livewire('/', Dashboard::class)->name('dashboard');
+    Route::livewire('/pulpit', Dashboard::class)->name('dashboard');
+    Route::get('/wzmianki', MentionSearchController::class)->middleware('throttle:120,1')->name('mentions.search');
+
+    Route::livewire('/komunikaty', Communication\Center::class)->name('communication.index');
+    Route::livewire('/komunikaty/nowy', Communication\Compose::class)->name('communication.create');
+    Route::livewire('/komunikaty/{announcement}', Communication\Show::class)->whereNumber('announcement')->name('communication.show');
+
+    Route::livewire('/wydarzenia', Events\Index::class)->name('events.index');
+    Route::livewire('/wydarzenia/nowe', Events\Edit::class)->name('events.create');
+    Route::livewire('/wydarzenia/{event}', Events\Show::class)->whereNumber('event')->name('events.show');
+    Route::livewire('/wydarzenia/{event}/edycja', Events\Edit::class)->whereNumber('event')->name('events.edit');
+
     Route::post('/szkola/przelacz', SwitchSchoolController::class)->name('school.switch');
 
     Route::livewire('/ustawienia/profil', Profile::class)->name('profile');
@@ -55,6 +84,7 @@ Route::middleware('auth')->group(function () {
         Route::livewire('/uzytkownicy/import', Users\Import::class)->name('users.import');
         Route::livewire('/uzytkownicy/{user}', Users\Edit::class)->name('users.edit');
         Route::livewire('/szkola', Site\SchoolEdit::class)->name('school');
+        Route::livewire('/szkola/profil-publiczny', Admin\SchoolProfile::class)->name('school.profile');
         Route::livewire('/logi', AuditLog::class)->name('audit');
     });
 

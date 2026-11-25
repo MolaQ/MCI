@@ -6,10 +6,12 @@
 <body class="min-h-screen bg-white dark:bg-zinc-800 antialiased">
     @php($user = auth()->user())
     @php($school = app(\App\Support\CurrentSchool::class)->get())
+    @php($unreadAnnouncements = $school ? $user->unreadAnnouncementsCount($school->id) : 0)
 
     <flux:sidebar sticky collapsible="mobile" class="bg-zinc-50 dark:bg-zinc-900 border-e border-zinc-200 dark:border-zinc-700">
         <flux:sidebar.header>
             <x-app.brand />
+            <div class="ms-auto hidden lg:block"><livewire:notification-bell /></div>
             <flux:sidebar.collapse class="lg:hidden" />
         </flux:sidebar.header>
 
@@ -20,6 +22,12 @@
                 {{ __('Pulpit') }}
             </flux:sidebar.item>
             @if ($school)
+                <flux:sidebar.item icon="megaphone" :href="route('communication.index')" :current="request()->routeIs('communication.*')" :badge="$unreadAnnouncements ?: null" wire:navigate>
+                    {{ __('Komunikaty') }}
+                </flux:sidebar.item>
+                <flux:sidebar.item icon="calendar-days" :href="route('events.index')" :current="request()->routeIs('events.*')" wire:navigate>
+                    {{ __('Wydarzenia') }}
+                </flux:sidebar.item>
                 <flux:sidebar.item icon="user-group" :href="route('groups.index')" :current="request()->routeIs('groups.*')" wire:navigate>
                     {{ __('Grupy') }}
                 </flux:sidebar.item>
@@ -42,6 +50,9 @@
                     @can('settings.manage')
                         <flux:sidebar.item icon="building-library" :href="route('admin.school')" :current="request()->routeIs('admin.school')" wire:navigate>
                             {{ __('Ustawienia szkoły') }}
+                        </flux:sidebar.item>
+                        <flux:sidebar.item icon="globe-alt" :href="route('admin.school.profile')" :current="request()->routeIs('admin.school.profile')" wire:navigate>
+                            {{ __('Profil publiczny') }}
                         </flux:sidebar.item>
                     @endcan
                     @can('audit.view')
@@ -71,6 +82,11 @@
 
         <flux:sidebar.spacer />
 
+        <flux:sidebar.nav>
+            <flux:sidebar.item icon="globe-alt" :href="route('home')">{{ __('Portal publiczny') }}</flux:sidebar.item>
+            <flux:sidebar.item icon="tv" :href="route('tv')">{{ __('Tryb TV') }}</flux:sidebar.item>
+        </flux:sidebar.nav>
+
         <x-app.user-menu :user="$user" class="hidden lg:block" />
     </flux:sidebar>
 
@@ -78,6 +94,7 @@
         <flux:sidebar.toggle class="lg:hidden" icon="bars-2" inset="left" />
         <x-app.brand class="ms-2" />
         <flux:spacer />
+        <livewire:notification-bell />
         <x-app.user-menu :user="$user" compact />
     </flux:header>
 

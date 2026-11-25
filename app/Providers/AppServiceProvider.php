@@ -3,6 +3,8 @@
 namespace App\Providers;
 
 use App\Enums\Role;
+use App\Models\Announcement;
+use App\Models\Event;
 use App\Models\Group;
 use App\Models\Invite;
 use App\Models\School;
@@ -38,6 +40,8 @@ class AppServiceProvider extends ServiceProvider
             'group' => Group::class,
             'school' => School::class,
             'invite' => Invite::class,
+            'announcement' => Announcement::class,
+            'event' => Event::class,
         ]);
 
         // Site admins and school admins pass every *permission* check (dotted

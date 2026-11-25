@@ -22,3 +22,6 @@ if (config('mci.queue_via_scheduler')) {
 
 Schedule::command('queue:prune-failed', ['--hours' => 24 * 14])->daily();
 Schedule::command('auth:clear-resets')->everyFifteenMinutes();
+
+// Scheduled announcements and any delivery left pending (Step 3).
+Schedule::command('mci:deliver-announcements')->everyMinute()->withoutOverlapping();
