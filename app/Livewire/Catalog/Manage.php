@@ -134,6 +134,13 @@ class Manage extends Component
         Flux::toast(text: $hidden ? __('Pokazano w szkole: :n', ['n' => $term->name]) : __('Ukryto w szkole: :n', ['n' => $term->name]));
     }
 
+    public function toggleFeatured(int $id, ManageTerms $terms): void
+    {
+        $term = $this->find($id);
+        $terms->setFeatured(Auth::user(), $term, $this->school(), ! $term->is_featured);
+        Flux::toast(text: $term->is_featured ? __('Wyróżniono na stronie głównej: :n', ['n' => $term->name]) : __('Bez wyróżnienia: :n', ['n' => $term->name]));
+    }
+
     public function delete(int $id, ManageTerms $terms): void
     {
         $term = $this->find($id);

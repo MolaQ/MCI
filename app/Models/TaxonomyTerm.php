@@ -21,16 +21,18 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property ?string $color
  * @property int $position
  * @property bool $is_active
+ * @property bool $is_featured
  */
 class TaxonomyTerm extends Model
 {
-    protected $fillable = ['kind', 'school_id', 'key', 'name', 'icon', 'color', 'position', 'is_active'];
+    protected $fillable = ['kind', 'school_id', 'key', 'name', 'icon', 'color', 'position', 'is_active', 'is_featured'];
 
     protected function casts(): array
     {
         return [
             'kind' => TaxonomyKind::class,
             'is_active' => 'boolean',
+            'is_featured' => 'boolean',
             'position' => 'integer',
         ];
     }
@@ -58,6 +60,12 @@ class TaxonomyTerm extends Model
     public function color(): string
     {
         return Appearance::sanitizeHex($this->color, '#71717a');
+    }
+
+    /** The site-wide catch-all ("Inne"): always offered, so every list keeps an option. */
+    public function isFallback(): bool
+    {
+        return $this->school_id === null && $this->key === $this->kind->fallbackKey();
     }
 
     public function isGlobal(): bool

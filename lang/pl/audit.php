@@ -53,5 +53,7 @@ return [
         'deleted' => 'Usunięto kategorię lub typ',
         'hidden' => 'Ukryto wspólną kategorię lub typ w szkole',
         'shown' => 'Pokazano wspólną kategorię lub typ w szkole',
+        'featured' => 'Wyróżniono kategorię na stronie głównej',
+        'unfeatured' => 'Wyłączono wyróżnienie kategorii',
     ],
 ];

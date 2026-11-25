@@ -31,6 +31,12 @@ enum TaxonomyKind: string
         };
     }
 
+    /** Key of the site-wide catch-all term that can never be archived, hidden or deleted. */
+    public function fallbackKey(): string
+    {
+        return $this === self::EventCategory ? EventCategory::Other->value : GroupType::Custom->value;
+    }
+
     public function defaultIcon(): string
     {
         return $this === self::EventCategory ? 'calendar' : 'user-group';
