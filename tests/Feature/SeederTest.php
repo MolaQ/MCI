@@ -36,6 +36,8 @@ it('renders every main page for the administrator', function () {
         route('site.appearance'), route('admin.audit'), route('profile'), route('admin.school'),
         route('site.schools'), route('site.schools.create'), route('site.schools.edit', $this->school), route('site.journal'),
         route('invites.index'), route('invites.create'),
+        route('communication.index'), route('communication.create'), route('events.index'), route('events.create'),
+        route('admin.school.profile'), route('home'), route('tv'),
     ] as $url) {
         $this->actingAs($admin)->get($url)->assertOk();
     }

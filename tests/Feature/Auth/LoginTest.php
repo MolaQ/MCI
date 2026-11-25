@@ -7,15 +7,16 @@ it('shows the Polish login page', function () {
     $this->get('/login')->assertOk()->assertSee('Zaloguj się');
 });
 
-it('redirects guests to the login page', function () {
-    $this->get('/')->assertRedirect('/login');
+it('redirects guests from the app to the login page, but shows them the public front', function () {
+    $this->get(route('dashboard'))->assertRedirect('/login');
+    $this->get('/')->assertOk()->assertSee('Zaloguj się');
 });
 
 it('logs in an active user', function () {
     $user = User::factory()->create(['email' => 'anna@szkola.edu.pl']);
 
     $this->post('/login', ['email' => 'ANNA@szkola.edu.pl ', 'password' => 'password'])
-        ->assertRedirect('/');
+        ->assertRedirect(route('dashboard'));
 
     $this->assertAuthenticatedAs($user);
     expect($user->fresh()->last_seen_at)->not->toBeNull();

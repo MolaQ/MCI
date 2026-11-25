@@ -13,6 +13,25 @@
         </div>
     @endif
 
+    <flux:card class="space-y-3">
+        <div class="flex items-center justify-between">
+            <flux:heading size="lg">{{ __('Komunikaty') }}</flux:heading>
+            <flux:button :href="route('communication.index')" wire:navigate size="xs" variant="ghost" icon-trailing="arrow-right">{{ __('Centrum komunikatów') }}</flux:button>
+        </div>
+        @forelse ($this->latestAnnouncements as $a)
+            <a href="{{ route('communication.show', $a) }}" wire:navigate class="flex items-center gap-3 rounded-mci px-2 py-2 hover:bg-zinc-50 dark:hover:bg-zinc-700/50">
+                <flux:icon :name="$a->priority->icon()" variant="mini" @class(['shrink-0', 'text-red-600' => $a->priority === \App\Enums\AnnouncementPriority::Urgent, 'text-amber-600' => $a->priority === \App\Enums\AnnouncementPriority::Important, 'text-zinc-400' => $a->priority === \App\Enums\AnnouncementPriority::Normal]) />
+                <span @class(['min-w-0 flex-1 truncate text-sm', 'font-semibold' => ! $a->pivot->read_at])>{{ $a->title }}</span>
+                <span class="shrink-0 text-xs text-zinc-500">{{ $a->published_at->diffForHumans() }}</span>
+                @if (! $a->pivot->read_at)
+                    <span class="size-2 shrink-0 rounded-full bg-primary"></span>
+                @endif
+            </a>
+        @empty
+            <flux:text>{{ __('Nie masz jeszcze komunikatów.') }}</flux:text>
+        @endforelse
+    </flux:card>
+
     <div class="grid gap-6 lg:grid-cols-3">
         <flux:card class="lg:col-span-2 space-y-4">
             <flux:heading size="lg">{{ __('Moje grupy') }}</flux:heading>
@@ -35,8 +54,24 @@
         </flux:card>
 
         <flux:card class="space-y-3">
-            <flux:heading size="lg">{{ __('Wkrótce w MCI') }}</flux:heading>
-            <flux:text>{{ __('Kolejne moduły pojawią się tutaj: alarmy bezpieczeństwa z potwierdzeniem odbioru, ogłoszenia dla wybranych grup, zadania i wydarzenia.') }}</flux:text>
+            <div class="flex items-center justify-between">
+                <flux:heading size="lg">{{ __('Najbliższe wydarzenia') }}</flux:heading>
+                <flux:button :href="route('events.index')" wire:navigate size="xs" variant="ghost" icon-trailing="arrow-right">{{ __('Wszystkie') }}</flux:button>
+            </div>
+            @forelse ($this->upcomingEvents as $event)
+                <a href="{{ route('events.show', $event) }}" wire:navigate class="flex items-center gap-3 rounded-mci px-2 py-1.5 hover:bg-zinc-50 dark:hover:bg-zinc-700/50">
+                    <div class="flex w-11 shrink-0 flex-col items-center rounded-mci bg-primary/10 py-1 text-primary">
+                        <span class="text-[0.6rem] uppercase">{{ $event->starts_at->translatedFormat('M') }}</span>
+                        <span class="text-base font-bold leading-none">{{ $event->starts_at->format('j') }}</span>
+                    </div>
+                    <div class="min-w-0">
+                        <div class="truncate text-sm font-medium">{{ $event->title }}</div>
+                        <div class="truncate text-xs text-zinc-500">{{ $event->all_day ? __('cały dzień') : $event->starts_at->format('H:i') }} · {{ $event->school->short_name }}</div>
+                    </div>
+                </a>
+            @empty
+                <flux:text>{{ __('Brak zaplanowanych wydarzeń.') }}</flux:text>
+            @endforelse
         </flux:card>
     </div>
 </div>

@@ -15,8 +15,9 @@ ordinary shared PHP hosting (cron only); a VPS is optional.
 | 0 | Foundations (Laravel, Livewire, Flux, Polish UI, CI) | ✅ |
 | 1 | Users, roles & permissions, groups, CSV import, appearance settings, audit log | ✅ |
 | 2 | Multi-school portal (school switcher, school logs vs site journal, profile privacy), invites & QR onboarding with multi-group joining | ✅ |
-| 3 | Announcements + `@` mentions | next |
-| 4–9 | PWA + Web Push, safety alerts, events/multi-school calendar, reminders, dashboard/TV, operations (backups, ZIP updates) | planned |
+| 3 | Public portal front (schools, offers, public events, TV board, iCal) and personalised communication centre (targeted announcements, `@` mentions, read/confirm, bell) | ✅ |
+| 4 | PWA + Web Push | next |
+| 5–11 | To-Do, Workflow, Project Manager, safety alerts, TV mode, operations (ZIP updates, daily 03:00 backups kept 14 days), logs & statistics | planned |
 
 ## Local development
 

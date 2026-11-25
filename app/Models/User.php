@@ -122,6 +122,24 @@ class User extends Authenticatable
         return $this->groups()->where('groups.school_id', app(CurrentSchool::class)->id());
     }
 
+    public function announcements(): BelongsToMany
+    {
+        return $this->belongsToMany(Announcement::class, 'announcement_recipients')
+            ->withPivot(['reason', 'notified_at', 'read_at', 'confirmed_at']);
+    }
+
+    /**
+     * Live announcements addressed to this person and not read yet
+     * (optionally only in one school) — the sidebar badge.
+     */
+    public function unreadAnnouncementsCount(?int $schoolId = null): int
+    {
+        return $this->announcements()->live()
+            ->whereNull('announcement_recipients.read_at')
+            ->when($schoolId, fn ($q) => $q->where('announcements.school_id', $schoolId))
+            ->count();
+    }
+
     public function groups(): BelongsToMany
     {
         return $this->belongsToMany(Group::class)
@@ -134,6 +152,13 @@ class User extends Authenticatable
     {
         $id = $school instanceof School ? $school->id : $school;
         $query->whereHas('schools', fn (Builder $q) => $q->whereKey($id));
+    }
+
+    /** Members whose access to that school is not suspended. */
+    public function scopeActiveInSchool(Builder $query, School|int|null $school): void
+    {
+        $id = $school instanceof School ? $school->id : $school;
+        $query->whereHas('schools', fn (Builder $q) => $q->whereKey($id)->where('school_user.status', SchoolMemberStatus::Active->value));
     }
 
     /**

@@ -295,16 +295,20 @@ erDiagram
 | id | bigint PK | |
 | owner_type, owner_id | morph | `alert`, `announcement`, `event` — index |
 | target_type | varchar(20) | `group`, `user`, `role`, `everyone` |
-| target_id | bigint null | group/user/role id; null for `everyone` |
+| target_id | varchar(40) null | group/user id, role **name** (e.g. `teacher`); null for `everyone` |
 | include_subgroups | bool default false | for group targets |
 
-`AudienceResolver::resolve($owner)` returns the **deduplicated union** of active users from all targets (and optionally excludes the sender). Resolution is a single SQL `UNION` query; the result is bulk-inserted into the owner's `*_recipients` table in chunks of 1 000.
+`App\Domain\Communication\Audience` (Step 3) is built from compact keys — `everyone`, `role:teacher`, `group:5`, `group+:5` (with subgroups), `user:9` — and `resolve($school)` returns the **deduplicated union** of active users who are active members of that school, in one query; the sender is excluded and the result is bulk-inserted into the owner's `*_recipients` table in chunks of 1 000. `AudienceGuard` decides which keys an author may use (§4.3) and is enforced server-side in the publishing action, never only in the form.
 
 ### 3.4 Announcements (targeted information feed)
 
-**`announcements`** — `id`, `author_id` FK, `title`, `body` (markdown, sanitized), `priority` (`normal`, `important`), `requires_read_confirmation` bool, `published_at` null (scheduled publish), `expires_at` null, `pinned_until` null, timestamps, deleted_at. Index `(published_at, expires_at)`.
+**`announcements`** — `id`, `school_id` FK, `author_id` FK, `title`, `body` (sanitized HTML from the shared editor, §12.1), `priority` (`normal`, `important`, `urgent`), `requires_confirmation` bool, `is_public` bool (needs `events.publish_public`; shown on the public front), `published_at` (future = scheduled), `expires_at` null, `pinned_until` null, `recipients_count`, timestamps, deleted_at. Index `(school_id, published_at)`.
 
-**`announcement_recipients`** — `announcement_id`, `user_id` (PK pair), `notified_at`, `read_at`, `confirmed_at`. Index `(user_id, read_at)` for the "unread" badge.
+**`announcement_recipients`** — `announcement_id`, `user_id` (PK pair), `reason` (`audience` / `mention`), `notified_at`, `read_at`, `confirmed_at`. Index `(user_id, read_at)` for the "unread" badge.
+
+**`mentions`** — `source_type/id` (announcement, later tasks/comments/events), `mentionable_type/id` (user or group), `school_id`, `created_by`, `created_at`.
+
+**`notifications`** — Laravel's database notifications: the bell. Only mentions, important/urgent posts and posts requiring confirmation ring it; routine posts appear in the feed only (anti-noise rule). Delivery is the idempotent `DeliverAnnouncement` job (`notified_at`), dispatched on publish and swept every minute by `mci:deliver-announcements` for scheduled posts.
 
 **`attachments`** (polymorphic, reused by announcements/tasks/events) — `attachable_type/id`, `disk`, `path`, `original_name`, `mime`, `size`, `uploaded_by`.
 
@@ -616,16 +620,18 @@ Each step ends with migrations + seeders + Pest tests + a short demo, and is its
 |---|---|---|
 | **0. Foundations** ✅ | Laravel + Livewire starter kit, Tailwind v4, Flux, PL locale & timezone, Pint/Larastan/Pest, GitHub Actions CI, `.env.example` for both deployment profiles, base layout (sidebar + bottom nav), README with local setup | `composer test` green in CI; login works in Polish |
 | **1. Users, roles, groups** ✅ | users extension, Spatie roles/permissions seeder, groups + `group_user`, admin screens (users CRUD, CSV import, group management, membership), policies for groups, audit log | admin can provision staff and put them into multiple groups; leaders manage own groups |
-| **2. Schools + invites & QR onboarding** | schools, `school_user`, per-school roles (Spatie teams), active-school switcher, site vs school logs; invites (personal / group link), multi-group joining, `/join/{token}`, QR + printable poster, expiry/limits/revoke, self-registration with domain rules + e-mail confirmation | a teacher scans a poster QR and lands in 3 groups of the right school |
-| **3. Audience + announcements + mentions** | `audience_targets`, `AudienceResolver`, audience picker (pills), announcements with read/confirm, notification centre (bell, live via polling), rich editor with `@user` / `@group` mentions (§12.1), profile visibility settings | a post to "Wychowawcy ∪ @Jan Kowalski" reaches exactly those people |
-| **4. PWA + Web Push** | manifest, service worker, install guidance (incl. iOS), push subscriptions, test push, VAPID config, image optimisation & caching (§12.4) | installed PWA on Android & iPhone receives a test push |
-| **5. Safety alerts** | templates, send flow with confirmation, `alerts` queue + after-response first batch, recipient snapshot, full-screen alarm + audio + wake lock, ack, live ack board, escalation, drills, all-clear | drill to 50 users; sender sees acks live; unacked get re-pushed |
-| **6. Events, stages, tasks, To-Do** | events with the 4 visibility levels, multi-school calendar with pill filters (school / group / status / urgency), public calendar page + iCal, stages, tasks, assignees, comments with mentions, personal To-Do | multi-stage *Dzień Otwarty* planned with team tasks and shown on the public calendar |
-| **7. Scheduler: reminders & overdue** | due-soon, overdue, daily digest, idempotent reminder log, user notification preferences | reminders fire exactly once in tests with frozen time |
-| **8. Dashboard, statistics, TV mode, presence** | workspace dashboard, stats, **TV / full-screen mode** (§12.3), online now / recently logged in / visit stats, log reports & CSV export, "Zgłoś błąd" inbox | a hallway TV shows today's events and active alerts |
-| **9. Operations & hardening** | **daily backups 03:00 (14 days)**, **ZIP updates** with manifest/checksums/password/scheduling, update announcements, maintenance page (§11), 2FA for privileged roles, RODO (export, retention), load test of alert fan-out | an update package is scheduled, announced, backed up, applied and can be rolled back |
+| **2. Schools + invites & QR onboarding** ✅ | schools, `school_user`, per-school roles (Spatie teams), active-school switcher, site vs school logs; invites (personal / group link), multi-group joining, `/join/{token}`, QR + printable poster, expiry/limits/revoke, self-registration with domain rules + e-mail confirmation | a teacher scans a poster QR and lands in 3 groups of the right school |
+| **3. Public front + communication centre** ✅ | public portal (schools, offers, public events and announcements, pill filters, iCal, TV board, entry points for login / invite code / TV); events core with the visibility levels; personalised communication centre (audience union of groups, roles and people, `@user` / `@group` mentions in a shared editor, read/unread, priority, confirmation, scheduling, pinning, polling bell) | a post to "Wychowawcy ∪ @Jan Kowalski" reaches exactly those people, and a guest sees only public content |
+| **4. PWA + Web Push** | manifest, service worker, install guidance (incl. iOS), push subscriptions, test push, VAPID config; push hooks into `DeliverAnnouncement`; image optimisation & caching (§12.4) | installed PWA on Android & iPhone receives a test push |
+| **5. To-Do** | personal and assigned tasks (`tasks`, `task_user`), due dates, priorities, checklists, comments with mentions, "Moje zadania" with pill filters (dziś / ten tydzień / zaległe), due-soon and overdue reminders via the scheduler (idempotent reminder log), notification preferences | a coordinator assigns a task to a group; each member sees it in To-Do and gets exactly one reminder |
+| **6. Workflow** | reusable multi-stage templates (stage list, default tasks, roles responsible, approvals), stage transitions with sign-off, workflow history in the school log | a "Wycieczka szkolna" template creates its stages and approval steps in one click |
+| **7. Project Manager** | events as projects: stages, tasks, team members, kanban + list views, progress, multi-school calendar with pill filters (school / group / status / urgency), `private_group` visibility, iCal feeds per user | multi-stage *Dzień Otwarty* planned with team tasks and shown on the public calendar |
+| **8. Safety alerts** | templates, send flow with confirmation, `alerts` queue + after-response first batch, recipient snapshot, full-screen alarm + audio + wake lock, ack, live ack board, escalation, drills, all-clear | drill to 50 users; sender sees acks live; unacked get re-pushed |
+| **9. TV mode, dashboard, presence** | signed display tokens for unattended screens (`/tv/{school}`), active-alert takeover, today's deadlines, configurable widgets, online now / recently logged in, workspace dashboard | a hallway TV shows today's events and active alerts |
+| **10. Operations** | **daily backups 03:00 Europe/Warsaw, kept 14 days**, **ZIP updates** with manifest/signature/checksums/password/scheduling and advance notice, maintenance page (§11), 2FA for privileged roles, RODO (export, retention), load test of alert fan-out | an update package is scheduled, announced, backed up, applied and can be rolled back |
+| **11. Logs, statistics & reports** | search/filters/reports over *Dziennik witryny* and *Logi szkoły*, CSV/PDF export, read/ack statistics for announcements and alerts, visit stats (aggregated, no tracking scripts), "Zgłoś błąd" inbox | a director exports last month's acknowledgement report for one group |
 
-Later / optional: students role, SMS gateway fallback, Google/Microsoft SSO, calendar ICS export, mobile native wrapper (Capacitor) if critical alerts on silent phones become a hard requirement.
+Later / optional: students role, SMS gateway fallback, Google/Microsoft SSO, mobile native wrapper (Capacitor) if critical alerts on silent phones become a hard requirement.
 
 ---
 
@@ -653,6 +659,15 @@ Later / optional: students role, SMS gateway fallback, Google/Microsoft SSO, cal
 - Screens: login / forgot password / set password (PL); dashboard; users list with search, filters, suspend, send set-up link; user form with roles, individual permissions and multi-group membership; CSV import with dry-run preview; groups list, detail (members, add/remove, promote leader, join/leave open groups), create/edit; appearance settings; audit log; own profile and password change.
 - Rules enforced in policies and covered by 46 tests: suspended users cannot log in and are logged out mid-session; leaders manage members of their own group only; only `groups.manage` promotes leaders; only `roles.manage` changes access and nobody edits their own access; only admins edit admins or grant the admin role; system groups cannot be deleted.
 - Seeders: idempotent roles/permissions, starter groups (Wszyscy pracownicy, Nauczyciele, Wychowawcy, Wolontariat…), first admin from `.env`; `DemoSeeder` with 70 staff for local testing.
+
+### What Step 3 delivered
+
+- **Public front** (no login, `throttle:240,1`): `/` with schools, offers and public events/announcements and URL-kept pill filters (school, category, date: dziś / ten tydzień / ten miesiąc / wszystkie); `/szkoly/{slug}` school page with offers by kind; `/publiczne/wydarzenia/{id}` (+ `.ics`), `/publiczne/komunikaty/{id}`; `/tv` full-screen board (clock, today, upcoming, public announcements, `F` / `Esc`). Entry points: login, join by invite code, TV.
+- **Safe public preview**: public queries select only whitelisted columns (`Event::PUBLIC_COLUMNS`), require `visibility = public`, a non-cancelled status and an active, listed school (`schools.is_listed`); everything else is a plain 404. People mentioned in public posts are shown as "@…" unless their own profile visibility is public. Logged-in users see a "Podgląd publiczny" banner. School admins edit the public profile and offers in *Administracja → Profil publiczny* (`settings.manage`).
+- **Events core**: `events` with category, time, place, visibility (`school_only` default, `inter_school`, `public` needs `events.publish_public`), separate internal and public descriptions, live preview of the public card; list with scope/category/when pills.
+- **Communication centre**: composer with pill quick-selectors (cała szkoła, roles, my groups, any group, + subgroups, people chips), live reach count, priority, confirmation, pin, schedule, expiry presets, public switch with preview; inbox with filters (wszystkie / nieprzeczytane / ważne / do potwierdzenia / wzmianki / wysłane), this school vs all my schools, search, "oznacz wszystkie"; detail page with read/confirm statistics and people lists for the author; bell with unread count; polling every `MCI_FEED_POLL_SECONDS` (20 s) with `wire:poll.visible`.
+- **Editor & mentions**: Tiptap loaded lazily (main bundle ≈6 KB), server-side HTML allow-list (`App\Support\RichText`), `App\Support\Mentions` re-resolves every mention in the school (labels rewritten, outsiders become text) and is reusable by any model.
+- Tests: audience union/dedup, guard denials, mention forgery, group-mention rule, sanitizer, bell rules, scheduled delivery, read/confirm, inbox filters, public 404s and column safety, iCal, profile permissions.
 
 ---
 
@@ -702,6 +717,8 @@ Safety rules: one update at a time (lock), no downgrades unless explicitly allow
 - One shared editor component (Tiptap via Alpine — no build-time framework) used by announcements, tasks, events, comments and messages. Output stored as sanitized HTML (allow-list) plus a `mentions` table: `mentionable_type/id` (user or group), `source_type/id`, `school_id`.
 - Typing `@` opens a pill list of **users and groups/teams** from the active school (and, if allowed by profile visibility, other schools), searchable by name, with avatars and group colours.
 - Mentioning a user notifies them; mentioning a group notifies its members **only if** the author may target that group (same rule as audiences) — otherwise the mention is rendered but sends nothing.
+- Storage format: `<span data-type="mention" data-id="user:12" data-label="Jan Kowalski">@Jan Kowalski</span>`. On save, `Mentions::normalize()` re-reads every id from the database for the active school and rewrites the label, so a forged "@Dyrektor" or a person from another school cannot be smuggled in; `Mentions::sync()` stores the rows; `Mentions::forPublic()` prepares text for the public front.
+- Search endpoint `GET /wzmianki?q=` returns people of the active school and the groups the user may view (max 6 + 6).
 
 ### 12.2 Filters and quick selectors
 

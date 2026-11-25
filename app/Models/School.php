@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Enums\ProfileVisibility;
 use App\Enums\SchoolMemberStatus;
 use Database\Factories\SchoolFactory;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -26,7 +27,10 @@ class School extends Model
     /** @use HasFactory<SchoolFactory> */
     use HasFactory, SoftDeletes;
 
-    protected $fillable = ['name', 'short_name', 'slug', 'city', 'email_domains', 'settings', 'logo_path', 'color', 'is_active'];
+    protected $fillable = [
+        'name', 'short_name', 'slug', 'city', 'email_domains', 'settings', 'logo_path', 'color', 'is_active',
+        'tagline', 'description', 'address', 'phone', 'public_email', 'website', 'is_listed',
+    ];
 
     protected function casts(): array
     {
@@ -34,6 +38,7 @@ class School extends Model
             'email_domains' => 'array',
             'settings' => 'array',
             'is_active' => 'boolean',
+            'is_listed' => 'boolean',
         ];
     }
 
@@ -57,6 +62,22 @@ class School extends Model
     public function groups(): HasMany
     {
         return $this->hasMany(Group::class);
+    }
+
+    public function offers(): HasMany
+    {
+        return $this->hasMany(SchoolOffer::class)->orderBy('position')->orderBy('name');
+    }
+
+    public function events(): HasMany
+    {
+        return $this->hasMany(Event::class);
+    }
+
+    /** Shown on the public front: active and listed by the school. */
+    public function scopePubliclyListed(Builder $query): void
+    {
+        $query->where('is_active', true)->where('is_listed', true);
     }
 
     public function setting(string $key, mixed $default = null): mixed

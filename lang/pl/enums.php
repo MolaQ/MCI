@@ -57,10 +57,51 @@ return [
         'alerts_send_drill' => 'Wysyłanie alarmów ćwiczebnych',
         'alerts_view_all_stats' => 'Statystyki wszystkich alarmów',
         'events_create' => 'Tworzenie wydarzeń',
-        'events_publish_public' => 'Publikowanie wydarzeń publicznie',
+        'events_publish_public' => 'Publikowanie treści publicznych (wydarzenia, komunikaty)',
         'tasks_assign_any' => 'Przydzielanie zadań dowolnym osobom',
         'stats_view' => 'Podgląd statystyk',
         'audit_view' => 'Podgląd dziennika zdarzeń',
         'settings_manage' => 'Ustawienia systemu i wygląd',
     ],
+
+    'announcement_priority' => [
+        'normal' => 'Zwykły',
+        'important' => 'Ważny',
+        'urgent' => 'Pilny',
+    ],
+
+    'visibility' => [
+        'public' => 'Publiczne',
+        'inter_school' => 'Międzyszkolne',
+        'school_only' => 'Tylko szkoła',
+        'private_group' => 'Wybrane osoby',
+    ],
+
+    'visibility_help' => [
+        'public' => 'Widoczne dla wszystkich na stronie głównej, bez logowania.',
+        'inter_school' => 'Widoczne dla zalogowanych osób ze wszystkich szkół portalu.',
+        'school_only' => 'Widoczne tylko dla członków tej szkoły.',
+        'private_group' => 'Tylko wybrane grupy i osoby.',
+    ],
+
+    'event_category' => [
+        'open_day' => 'Dzień otwarty',
+        'competition' => 'Konkurs / zawody',
+        'recruitment' => 'Rekrutacja',
+        'ceremony' => 'Uroczystość',
+        'sport' => 'Sport',
+        'charity' => 'Akcja charytatywna',
+        'meeting' => 'Spotkanie',
+        'other' => 'Inne',
+    ],
+
+    'offer_kind' => [
+        'technikum' => 'Technikum',
+        'branzowa' => 'Szkoła branżowa',
+        'liceum' => 'Liceum',
+        'policealna' => 'Szkoła policealna',
+        'kurs' => 'Kurs / KKZ',
+        'inne' => 'Inne',
+    ],
+
 ];
