@@ -59,6 +59,8 @@ class Index extends Component
 
     public function render()
     {
+        $this->authorize('viewAny', Invite::class);
+
         return view('livewire.invites.index', [
             'statuses' => InviteStatus::cases(),
             'kinds' => InviteKind::cases(),

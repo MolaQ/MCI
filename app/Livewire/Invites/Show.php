@@ -37,6 +37,8 @@ class Show extends Component
 
     public function render()
     {
+        $this->authorize('view', $this->invite);
+
         return view('livewire.invites.show', [
             'redemptions' => $this->invite->redemptions()->with('user')->latest('redeemed_at')->limit(100)->get(),
         ])->title($this->invite->label ?: __('Zaproszenie'));

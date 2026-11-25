@@ -11,9 +11,9 @@ class AddGroupMember
 {
     public function handle(Group $group, User $user, GroupRole $role = GroupRole::Member, string $joinedVia = 'admin'): void
     {
+        // Already a member: never change the role here (that is changeRole(),
+        // which callers authorize separately, e.g. manageLeaders).
         if ($group->members()->whereKey($user->id)->exists()) {
-            $this->changeRole($group, $user, $role);
-
             return;
         }
 

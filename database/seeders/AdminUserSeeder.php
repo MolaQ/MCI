@@ -30,21 +30,23 @@ class AdminUserSeeder extends Seeder
 
         $school = School::query()->orderBy('id')->first();
         $user = User::withTrashed()->firstWhere('email', mb_strtolower($email));
-        $password = null;
-
+        // Bootstrap only: an account that already exists (even deleted or
+        // demoted on purpose) is left exactly as the administrators set it.
         if ($user) {
-            $user->restore();
-        } else {
-            $password = config('mci.admin.password') ?: Str::password(16, symbols: false);
-            $user = User::query()->create([
-                'first_name' => config('mci.admin.first_name'),
-                'last_name' => config('mci.admin.last_name'),
-                'email' => mb_strtolower($email),
-                'password' => $password,
-                'status' => UserStatus::Active,
-            ]);
-            $user->forceFill(['email_verified_at' => now()])->save();
+            $this->command?->info("Account {$email} already exists — left unchanged.");
+
+            return;
         }
+
+        $password = config('mci.admin.password') ?: Str::password(16, symbols: false);
+        $user = User::query()->create([
+            'first_name' => config('mci.admin.first_name'),
+            'last_name' => config('mci.admin.last_name'),
+            'email' => mb_strtolower($email),
+            'password' => $password,
+            'status' => UserStatus::Active,
+        ]);
+        $user->forceFill(['email_verified_at' => now()])->save();
 
         $user->forceFill(['is_site_admin' => true])->save();
 

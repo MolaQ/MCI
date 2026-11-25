@@ -65,6 +65,10 @@ class Import extends Component
 
         Flux::toast(variant: 'success', text: __('Zaimportowano: :created nowych, :updated zaktualizowanych.', ['created' => $result['created'], 'updated' => $result['updated']]));
 
+        if ($result['failed_links']) {
+            Flux::toast(variant: 'warning', duration: 0, text: __('Nie udało się wysłać linku do: :emails. Wyślij go ponownie z listy użytkowników.', ['emails' => implode(', ', $result['failed_links'])]));
+        }
+
         return $this->redirectRoute('admin.users.index', navigate: true);
     }
 
@@ -80,6 +84,8 @@ class Import extends Component
 
     public function render()
     {
+        $this->authorize('import', User::class);
+
         return view('livewire.admin.users.import', ['roles' => Role::cases()]);
     }
 }

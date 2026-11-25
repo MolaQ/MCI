@@ -8,6 +8,7 @@ use App\Support\CurrentSchool;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Computed;
+use Livewire\Attributes\Locked;
 use Livewire\Attributes\Url;
 use Livewire\Component;
 use Livewire\WithPagination;
@@ -22,6 +23,7 @@ class AuditLog extends Component
 {
     use WithPagination;
 
+    #[Locked]
     public string $scope = 'school';
 
     #[Url(except: '')]
@@ -38,7 +40,11 @@ class AuditLog extends Component
     public function mount(string $scope = 'school'): void
     {
         $this->scope = $scope === 'site' ? 'site' : 'school';
+        $this->authorizeScope();
+    }
 
+    private function authorizeScope(): void
+    {
         if ($this->scope === 'site') {
             $this->authorize('site-admin');
         } else {
@@ -145,6 +151,8 @@ class AuditLog extends Component
 
     public function render()
     {
+        $this->authorizeScope();
+
         return view('livewire.admin.audit-log')
             ->title($this->scope === 'site' ? __('Dziennik witryny') : __('Logi szkoły'));
     }

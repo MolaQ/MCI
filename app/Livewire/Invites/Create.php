@@ -131,6 +131,8 @@ class Create extends Component
 
     public function render()
     {
+        $this->authorize('create', Invite::class);
+
         return view('livewire.invites.create', ['roles' => Role::cases()]);
     }
 }

@@ -23,6 +23,8 @@ class Schools extends Component
 
     public function render()
     {
+        $this->authorize('site-admin');
+
         return view('livewire.site.schools');
     }
 }

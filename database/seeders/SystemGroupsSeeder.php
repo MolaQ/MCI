@@ -10,8 +10,8 @@ use Illuminate\Database\Seeder;
 
 /**
  * Starter groups for every school (typical Polish vocational school).
- * Idempotent by (school, slug); everything except the system group can be
- * renamed or deleted later.
+ * Creates missing (school, slug) pairs only; everything except the system
+ * group can be renamed or deleted later.
  */
 class SystemGroupsSeeder extends Seeder
 {
@@ -35,6 +35,8 @@ class SystemGroupsSeeder extends Seeder
         ];
 
         foreach ($groups as $g) {
+            // Create missing groups only; never overwrite what admins changed
+            // (or bring back a group they deleted).
             Group::withTrashed()->firstOrCreate(['school_id' => $school->id, 'slug' => $g['slug']], [
                 'name' => $g['name'],
                 'type' => $g['type'],

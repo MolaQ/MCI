@@ -122,6 +122,8 @@ class Index extends Component
 
     public function render()
     {
+        $this->authorize('viewAny', User::class);
+
         return view('livewire.admin.users.index', [
             'roles' => Role::cases(),
             'statuses' => [

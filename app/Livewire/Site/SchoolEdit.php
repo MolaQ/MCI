@@ -136,6 +136,8 @@ class SchoolEdit extends Component
 
     public function render()
     {
+        $this->authorizeAccess();
+
         return view('livewire.site.school-edit', [
             'visibilities' => ProfileVisibility::cases(),
             'siteAdmin' => $this->isSiteAdmin(),

@@ -111,6 +111,9 @@ class Show extends Component
 
     public function render()
     {
+        // Re-checked on every request: losing access closes the page's data too.
+        $this->authorize('view', $this->group);
+
         return view('livewire.groups.show')->title($this->group->name);
     }
 }
