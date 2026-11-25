@@ -8,7 +8,7 @@ use App\Models\Group;
 use Illuminate\Database\Seeder;
 
 /**
- * Starter groups for a typical Polish vocational school. Idempotent by slug;
+ * Starter groups for a typical Polish vocational school. Creates missing slugs only;
  * everything except the system group can be renamed or deleted later.
  */
 class SystemGroupsSeeder extends Seeder
@@ -28,7 +28,9 @@ class SystemGroupsSeeder extends Seeder
         ];
 
         foreach ($groups as $g) {
-            Group::withTrashed()->updateOrCreate(['slug' => $g['slug']], [
+            // Create missing groups only; never overwrite what admins changed
+            // (or bring back a group they deleted).
+            Group::withTrashed()->firstOrCreate(['slug' => $g['slug']], [
                 'name' => $g['name'],
                 'type' => $g['type'],
                 'is_system' => $g['is_system'] ?? false,

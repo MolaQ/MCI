@@ -24,10 +24,10 @@ class AdminUserSeeder extends Seeder
 
         $user = User::withTrashed()->firstWhere('email', mb_strtolower($email));
 
+        // Bootstrap only: an account that already exists (even deleted or
+        // demoted on purpose) is left exactly as the administrators set it.
         if ($user) {
-            $user->restore();
-            $user->assignRole(Role::Admin->value);
-            $this->command?->info("Administrator {$email} already exists — role ensured.");
+            $this->command?->info("Account {$email} already exists — left unchanged.");
 
             return;
         }

@@ -51,8 +51,28 @@ class Edit extends Component
             'description' => ['nullable', 'string', 'max:2000'],
             'color' => ['nullable', 'regex:/^#[0-9a-fA-F]{6}$/'],
             'membership_mode' => ['required', Rule::enum(MembershipMode::class)],
-            'parent_id' => ['nullable', 'integer', Rule::exists('groups', 'id')->whereNull('deleted_at'), Rule::notIn([$this->group?->id])],
+            'parent_id' => ['nullable', 'integer', Rule::exists('groups', 'id')->whereNull('deleted_at'), Rule::notIn([$this->group?->id]), $this->noCycle(...)],
         ];
+    }
+
+    /**
+     * The new parent may not be this group or any of its descendants.
+     */
+    private function noCycle(string $attribute, mixed $value, \Closure $fail): void
+    {
+        if (! $this->group || ! $value) {
+            return;
+        }
+
+        $seen = [];
+        for ($id = (int) $value; $id && ! isset($seen[$id]); $id = (int) Group::query()->whereKey($id)->value('parent_id')) {
+            if ($id === $this->group->id) {
+                $fail(__('Grupa nadrzędna nie może być grupą podrzędną tej grupy.'));
+
+                return;
+            }
+            $seen[$id] = true;
+        }
     }
 
     protected function validationAttributes(): array
@@ -101,11 +121,16 @@ class Edit extends Component
 
     public function render()
     {
+        $canChangeStructure = Auth::user()->can('create', Group::class);
+
         return view('livewire.groups.edit', [
             'types' => GroupType::cases(),
             'modes' => MembershipMode::cases(),
-            'parents' => Group::query()->when($this->group, fn ($q) => $q->whereKeyNot($this->group->id))->orderBy('name')->get(['id', 'name']),
-            'canChangeStructure' => Auth::user()->can('create', Group::class),
+            // Leaders cannot change the hierarchy, so they get no list of other groups.
+            'parents' => $canChangeStructure
+                ? Group::query()->when($this->group, fn ($q) => $q->whereKeyNot($this->group->id))->orderBy('name')->get(['id', 'name'])
+                : Group::query()->whereKey($this->group?->parent_id)->get(['id', 'name']),
+            'canChangeStructure' => $canChangeStructure,
         ])->title($this->group ? $this->group->name : __('Nowa grupa'));
     }
 }

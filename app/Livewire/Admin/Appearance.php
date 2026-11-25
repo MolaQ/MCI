@@ -8,6 +8,7 @@ use App\Support\Settings;
 use Flux\Flux;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
+use Livewire\Attributes\Locked;
 use Livewire\Attributes\Title;
 use Livewire\Component;
 use Livewire\WithFileUploads;
@@ -33,6 +34,7 @@ class Appearance extends Component
 
     public $logo;
 
+    #[Locked]
     public ?string $logo_path = null;
 
     public function mount(AppearanceService $appearance): void

@@ -27,6 +27,8 @@
                     <flux:input wire:model.live.debounce.250ms="groupFilter" size="sm" icon="magnifying-glass" :placeholder="__('Filtruj grupy')" class="max-w-56" />
                 </div>
 
+                <flux:error name="memberships" />
+
                 <div class="divide-y divide-zinc-100 dark:divide-zinc-700">
                     @forelse ($this->groups as $group)
                         <div class="flex items-center justify-between gap-3 py-2" wire:key="g-{{ $group->id }}">

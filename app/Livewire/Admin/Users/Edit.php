@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Admin\Users;
 
+use App\Domain\Groups\MembershipGuard;
 use App\Domain\Users\Actions\SaveUser;
 use App\Domain\Users\Actions\SendAccountSetupLink;
 use App\Enums\GroupRole;
@@ -83,7 +84,7 @@ class Edit extends Component
             'email' => ['required', 'email', 'max:191', Rule::unique('users', 'email')->ignore($this->user?->id)],
             'phone' => ['nullable', 'string', 'max:32'],
             'status' => ['required', Rule::enum(UserStatus::class)],
-            'roles' => ['array', 'min:1'],
+            'roles' => ['array'],
             'roles.*' => [Rule::enum(Role::class)],
             'permissions' => ['array'],
             'permissions.*' => [Rule::enum(Permission::class)],
@@ -102,7 +103,7 @@ class Edit extends Component
         ];
     }
 
-    public function save(SaveUser $save, SendAccountSetupLink $sendLink)
+    public function save(SaveUser $save, SendAccountSetupLink $sendLink, MembershipGuard $guard)
     {
         $this->authorize($this->user ? 'update' : 'create', $this->user ?? User::class);
         $this->email = mb_strtolower(trim($this->email));
@@ -115,6 +116,12 @@ class Edit extends Component
         }
 
         $data['groups'] = collect($this->memberships)->filter()->all();
+
+        if ($denied = $guard->denied(Auth::user(), MembershipGuard::currentOf($this->user), $data['groups'])) {
+            $this->addError('memberships', __('Nie możesz zmieniać członkostwa ani liderów w grupach: :groups.', ['groups' => implode(', ', $denied)]));
+
+            return null;
+        }
 
         if (! $this->canManageAccess) {
             unset($data['roles'], $data['permissions']);

@@ -38,7 +38,7 @@ queue. Moving to a VPS later is a matter of changing `.env`.
    ```bash
    php artisan key:generate
    php artisan migrate --force
-   php artisan db:seed --force      # idempotent: roles, permissions, starter groups, first admin
+   php artisan db:seed --force      # safe to rerun: adds missing roles/permissions, missing starter groups and the first admin only if absent
    php artisan storage:link
    php artisan optimize
    ```

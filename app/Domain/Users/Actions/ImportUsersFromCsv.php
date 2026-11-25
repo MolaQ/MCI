@@ -2,15 +2,20 @@
 
 namespace App\Domain\Users\Actions;
 
+use App\Domain\Groups\MembershipGuard;
 use App\Enums\GroupRole;
+use App\Enums\Permission;
 use App\Enums\Role;
 use App\Models\Group;
 use App\Models\User;
 use App\Support\Audit;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 use RuntimeException;
+use Throwable;
 
 /**
  * Bulk provisioning from a CSV file (Excel "CSV UTF-8" export works).
@@ -36,10 +41,16 @@ class ImportUsersFromCsv
     public function __construct(
         private SaveUser $saveUser,
         private SendAccountSetupLink $sendSetupLink,
+        private MembershipGuard $membershipGuard,
     ) {}
 
     /**
-     * @return array{created: int, updated: int, skipped: int, errors: array<int, string>, rows: int}
+     * Every row is checked with the same rules as the user form, for the
+     * person running the import ($actor): who they may edit, which roles
+     * they may grant, and which group memberships / leader seats they may
+     * change. Rows that break a rule are reported as errors, never applied.
+     *
+     * @return array{created: int, updated: int, skipped: int, errors: array<int, string>, rows: int, failed_links: list<string>}
      */
     public function handle(
         string $path,
@@ -47,16 +58,24 @@ class ImportUsersFromCsv
         bool $updateExisting = false,
         bool $sendSetupLinks = false,
         string $defaultRole = 'teacher',
+        ?User $actor = null,
     ): array {
+        $actor ??= Auth::user();
+        if (! $actor) {
+            throw new RuntimeException('CSV import needs an acting user.');
+        }
+
+        $gate = Gate::forUser($actor);
         $rows = $this->parse($path);
         $groupIndex = $this->groupIndex();
-        $result = ['created' => 0, 'updated' => 0, 'skipped' => 0, 'errors' => [], 'rows' => count($rows)];
+        $result = ['created' => 0, 'updated' => 0, 'skipped' => 0, 'errors' => [], 'rows' => count($rows), 'failed_links' => []];
         $seenEmails = [];
         $prepared = [];
 
         foreach ($rows as $line => $row) {
             $row['email'] = mb_strtolower(trim($row['email'] ?? ''));
-            $row['role'] = Str::lower(trim($row['role'] ?? '')) ?: $defaultRole;
+            $explicitRole = Str::lower(trim($row['role'] ?? ''));
+            $row['role'] = $explicitRole ?: $defaultRole;
 
             $validator = Validator::make($row, [
                 'first_name' => ['required', 'string', 'max:100'],
@@ -93,6 +112,46 @@ class ImportUsersFromCsv
                 continue;
             }
 
+            if ($existing?->trashed()) {
+                $result['errors'][$line] = __('Konto :email zostało usunięte — import go nie przywraca.', ['email' => $row['email']]);
+
+                continue;
+            }
+
+            if ($existing && ! $gate->allows('update', $existing)) {
+                $result['errors'][$line] = __('Brak uprawnień do edycji konta :email.', ['email' => $row['email']]);
+
+                continue;
+            }
+
+            // Roles: same rules as the user form.
+            $canManageAccess = $existing ? $gate->allows('manageAccess', $existing) : $gate->allows(Permission::RolesManage->value);
+            $roleChanges = $existing ? $existing->getRoleNames()->all() !== [$row['role']] : true;
+            $setRoles = $canManageAccess;
+
+            if ($roleChanges && ! $canManageAccess) {
+                if ($explicitRole !== '') {
+                    $result['errors'][$line] = __('Brak uprawnień do nadawania ról (rola: :role).', ['role' => $row['role']]);
+
+                    continue;
+                }
+            } elseif ($setRoles && $row['role'] === Role::Admin->value && ! $actor->isAdmin()) {
+                $result['errors'][$line] = __('Tylko administrator może nadać rolę administratora.');
+
+                continue;
+            }
+
+            // Import adds memberships; it never removes ones made in the app.
+            $current = MembershipGuard::currentOf($existing);
+            $groups = collect($current)->replace($groups)->all();
+
+            if ($denied = $this->membershipGuard->denied($actor, $current, $groups)) {
+                $result['errors'][$line] = __('Brak uprawnień do zmiany członkostwa w grupach: :groups.', ['groups' => implode(', ', $denied)]);
+
+                continue;
+            }
+
+            $row['set_roles'] = $setRoles;
             $prepared[] = [$row, $groups, $existing];
             $existing ? $result['updated']++ : $result['created']++;
         }
@@ -110,21 +169,11 @@ class ImportUsersFromCsv
                     'last_name' => trim($row['last_name']),
                     'email' => $row['email'],
                     'phone' => trim($row['phone'] ?? '') ?: null,
-                    'roles' => [$row['role']],
+                    'groups' => $groups,
                 ];
 
-                if ($existing) {
-                    // Import adds memberships; it never removes ones made in the app.
-                    $groups = $existing->groups()->get()
-                        ->mapWithKeys(fn ($g) => [$g->id => $g->pivot->role->value])
-                        ->replace($groups)
-                        ->all();
-                }
-
-                $data['groups'] = $groups;
-
-                if ($existing?->trashed()) {
-                    $existing->restore();
+                if ($row['set_roles']) {
+                    $data['roles'] = [$row['role']];
                 }
 
                 $user = $this->saveUser->handle($data, $existing);
@@ -135,9 +184,17 @@ class ImportUsersFromCsv
             }
         });
 
+        // Accounts are already saved; one failed e-mail must not stop the rest.
+        // Failures are reported so the admin can resend from the user list
+        // ("Wyślij link"), which works for every account still awaiting set-up.
         if ($sendSetupLinks) {
             foreach ($toNotify as $user) {
-                $this->sendSetupLink->handle($user);
+                try {
+                    $this->sendSetupLink->handle($user);
+                } catch (Throwable $e) {
+                    report($e);
+                    $result['failed_links'][] = $user->email;
+                }
             }
         }
 
@@ -146,6 +203,7 @@ class ImportUsersFromCsv
             'updated' => $result['updated'],
             'skipped' => $result['skipped'],
             'errors' => count($result['errors']),
+            'failed_links' => count($result['failed_links']),
         ]);
 
         return $result;
