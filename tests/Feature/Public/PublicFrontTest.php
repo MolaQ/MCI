@@ -1,13 +1,16 @@
 <?php
 
 use App\Domain\Communication\Actions\PublishAnnouncement;
+use App\Enums\Feature;
 use App\Enums\ProfileVisibility;
 use App\Enums\Role;
 use App\Livewire\Admin\SchoolProfile;
 use App\Livewire\Events\Edit as EventEdit;
+use App\Livewire\Publicly\Home;
 use App\Models\Event;
 use App\Models\School;
 use App\Models\User;
+use App\Support\Features;
 use Livewire\Livewire;
 
 function makeEvent(array $attributes = []): Event
@@ -130,4 +133,43 @@ it('never puts private user data on the public front', function () {
     $this->get(route('home'))->assertDontSee('ukryty@szkola.edu.pl')->assertDontSee('Ukryty');
     $this->get(route('public.school', $this->school->slug))->assertDontSee('ukryty@szkola.edu.pl');
     expect(User::query()->count())->toBeGreaterThan(0);
+});
+
+it('lays out the information centre: summary, one filter row, featured event and paging', function () {
+    foreach (range(1, 9) as $i) {
+        makeEvent(['title' => "Wydarzenie $i", 'starts_at' => now()->addDays($i)->setTime(10, 0), 'category' => $i % 2 ? 'sport' : 'open_day']);
+    }
+
+    $c = Livewire::test(Home::class)
+        ->assertSee('Wydarzenie 1')->assertSee('Wydarzenie 7')->assertDontSee('Wydarzenie 8')
+        ->assertSee('Pokaż więcej wydarzeń')
+        ->assertSet('limit', 7);
+
+    // Only categories that have events are offered, with counts.
+    expect($c->instance()->categories->pluck('term.key')->all())->toEqualCanonicalizing(['sport', 'open_day'])
+        ->and($c->instance()->summary['schools'])->toBe(1);
+
+    $c->call('loadMore')->assertSee('Wydarzenie 9')->assertDontSee('Pokaż więcej wydarzeń');
+    $c->call('setFilter', 'category', 'open_day')->assertSet('limit', 7)->assertSee('Wydarzenie 2')
+        ->call('setFilter', 'when', 'nonsense')->assertSet('when', 'upcoming')
+        ->call('resetFilters')->assertSet('category', '');
+});
+
+it('previews a school in a drawer and exports its public calendar', function () {
+    makeEvent(['title' => 'Dzień Otwarty ZSM']);
+    makeEvent(['title' => 'Narada', 'visibility' => 'school_only']);
+
+    Livewire::test(Home::class)
+        ->call('openSchool', $this->school->slug)->assertSet('preview', $this->school->slug)
+        ->assertSee(route('public.school.ics', $this->school->slug))
+        ->call('openSchool', 'nie-istnieje')->assertSet('preview', null);
+
+    $ics = $this->get(route('public.school.ics', $this->school->slug))->assertOk()
+        ->assertHeader('Content-Type', 'text/calendar; charset=utf-8')->getContent();
+    expect($ics)->toContain('X-WR-CALNAME:')->toContain('SUMMARY:Dzień Otwarty ZSM')->not->toContain('Narada');
+
+    School::factory()->create(['is_listed' => false, 'slug' => 'ukryta']);
+    $this->get(route('public.school.ics', 'ukryta'))->assertNotFound();
+    app(Features::class)->setForSchool($this->school, Feature::EventIcs, false);
+    $this->get(route('public.school.ics', $this->school->slug))->assertNotFound();
 });

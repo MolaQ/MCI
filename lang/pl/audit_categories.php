@@ -7,4 +7,5 @@ return [
     'school' => 'Szkoła',
     'invite' => 'Zaproszenia',
     'settings' => 'Ustawienia',
+    'catalog' => 'Kategorie i typy',
 ];

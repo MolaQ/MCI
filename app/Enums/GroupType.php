@@ -20,6 +20,22 @@ enum GroupType: string
         return __("enums.group_type.{$this->value}");
     }
 
+    public function icon(): string
+    {
+        return match ($this) {
+            self::Staff => 'briefcase',
+            self::Subject => 'book-open',
+            self::Vocational => 'wrench-screwdriver',
+            self::ClassTutors => 'user-group',
+            self::SchoolClass => 'academic-cap',
+            self::Volunteering => 'heart',
+            self::Sport => 'trophy',
+            self::Club => 'light-bulb',
+            self::Association => 'building-office',
+            self::Custom => 'tag',
+        };
+    }
+
     /**
      * Default chip colour (hex) when a group has no colour of its own.
      */

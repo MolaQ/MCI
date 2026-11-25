@@ -2,8 +2,8 @@
 
 namespace App\Models;
 
+use App\Casts\AsTaxonomyTerm;
 use App\Enums\ContentVisibility;
-use App\Enums\EventCategory;
 use App\Enums\Feature;
 use App\Support\Features;
 use Database\Factories\EventFactory;
@@ -18,7 +18,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * stages, tasks and members are added by the Project Manager step.
  *
  * @property ContentVisibility $visibility
- * @property EventCategory $category
+ * @property TaxonomyTerm $category
  */
 class Event extends Model
 {
@@ -37,7 +37,7 @@ class Event extends Model
     {
         return [
             'visibility' => ContentVisibility::class,
-            'category' => EventCategory::class,
+            'category' => AsTaxonomyTerm::class.':event_category',
             'starts_at' => 'datetime',
             'ends_at' => 'datetime',
             'all_day' => 'boolean',

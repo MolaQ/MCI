@@ -12,7 +12,7 @@
         <flux:select wire:model.live="type">
             <flux:select.option value="">{{ __('Wszystkie typy') }}</flux:select.option>
             @foreach ($types as $t)
-                <flux:select.option :value="$t->value">{{ $t->label() }}</flux:select.option>
+                <flux:select.option :value="$t->key">{{ $t->label() }}</flux:select.option>
             @endforeach
         </flux:select>
     </div>

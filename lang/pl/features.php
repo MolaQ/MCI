@@ -17,6 +17,8 @@ return [
         'announcements_public' => ['label' => 'Komunikaty publiczne', 'description' => 'Publikacja komunikatu także na portalu publicznym.'],
         'push' => ['label' => 'Powiadomienia push', 'description' => 'Powiadomienia na telefonie i komputerze (także po zamknięciu aplikacji).'],
         'events' => ['label' => 'Wydarzenia', 'description' => 'Kalendarz wydarzeń szkoły.'],
+        'events_school_categories' => ['label' => 'Własne kategorie wydarzeń w szkołach', 'description' => 'Szkoła może dodawać swoje kategorie i ukrywać kategorie wspólne.'],
+        'groups_school_types' => ['label' => 'Własne typy grup w szkołach', 'description' => 'Szkoła może dodawać swoje typy grup (np. koła, stowarzyszenia) i ukrywać typy wspólne.'],
         'events_public' => ['label' => 'Wydarzenia publiczne', 'description' => 'Pokazywanie wydarzeń na portalu publicznym.'],
         'events_covers' => ['label' => 'Obrazy wydarzeń', 'description' => 'Okładka wydarzenia (także na portalu, jeśli wydarzenie jest publiczne).'],
         'events_ics' => ['label' => 'Pobieranie do kalendarza (iCal)', 'description' => 'Przycisk „Dodaj do kalendarza” przy publicznych wydarzeniach.'],

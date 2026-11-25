@@ -2,10 +2,12 @@
 
 namespace App\Livewire\Groups;
 
-use App\Enums\GroupType;
 use App\Enums\MembershipMode;
 use App\Enums\Permission;
+use App\Enums\TaxonomyKind;
 use App\Models\Group;
+use App\Support\CurrentSchool;
+use App\Support\Taxonomy;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Computed;
@@ -48,6 +50,6 @@ class Index extends Component
 
     public function render()
     {
-        return view('livewire.groups.index', ['types' => GroupType::cases()]);
+        return view('livewire.groups.index', ['types' => app(Taxonomy::class)->options(TaxonomyKind::GroupType, app(CurrentSchool::class)->get())]);
     }
 }

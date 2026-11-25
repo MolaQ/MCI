@@ -14,7 +14,7 @@
                     <flux:label>{{ __('Kategoria') }}</flux:label>
                     <div class="flex flex-wrap gap-2">
                         @foreach ($categories as $c)
-                            <x-ui.pill wire:click="$set('category', '{{ $c->value }}')" :active="$category === $c->value"><flux:icon :name="$c->icon()" variant="micro" /> {{ $c->label() }}</x-ui.pill>
+                            <x-ui.pill wire:click="$set('category', '{{ $c->key }}')" :active="$category === $c->key"><flux:icon :name="$c->icon()" variant="micro" /> {{ $c->label() }}</x-ui.pill>
                         @endforeach
                     </div>
                 </div>
@@ -83,7 +83,7 @@
             @if ($visibility === 'public' && $title !== '' && $date !== '')
                 <div class="space-y-2">
                     <div class="flex items-center gap-2 text-sm font-medium text-zinc-500"><flux:icon name="eye" variant="micro" /> {{ __('Podgląd na stronie publicznej') }}</div>
-                    @php($preview = new \App\Models\Event(['title' => $title, 'category' => $category, 'location' => $location ?: null, 'all_day' => $all_day, 'public_description' => $public_description ?: null, 'visibility' => 'public', 'status' => 'planned']))
+                    @php($preview = new \App\Models\Event(['school_id' => app(\App\Support\CurrentSchool::class)->id(), 'title' => $title, 'category' => $category, 'location' => $location ?: null, 'all_day' => $all_day, 'public_description' => $public_description ?: null, 'visibility' => 'public', 'status' => 'planned']))
                     @php($preview->starts_at = rescue(fn () => \Illuminate\Support\Carbon::parse($date.' '.($all_day ? '00:00' : ($start_time ?: '00:00'))), now(), false))
                     @php($preview->setRelation('school', app(\App\Support\CurrentSchool::class)->get()))
                     <x-event-card :event="$preview" public />

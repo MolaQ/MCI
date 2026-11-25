@@ -13,7 +13,7 @@
             <div class="grid gap-4 sm:grid-cols-2">
                 <flux:select wire:model="type" :label="__('Typ')" :disabled="! $canChangeStructure">
                     @foreach ($types as $t)
-                        <flux:select.option :value="$t->value">{{ $t->label() }}</flux:select.option>
+                        <flux:select.option :value="$t->key">{{ $t->label() }}</flux:select.option>
                     @endforeach
                 </flux:select>
 

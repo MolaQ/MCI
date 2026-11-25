@@ -4,13 +4,14 @@ namespace App\Livewire\Groups;
 
 use App\Domain\Media\Actions\ReplaceImage;
 use App\Enums\Feature;
-use App\Enums\GroupType;
 use App\Enums\MembershipMode;
+use App\Enums\TaxonomyKind;
 use App\Livewire\Concerns\WithImageUploads;
 use App\Models\Group;
 use App\Support\Audit;
 use App\Support\CurrentSchool;
 use App\Support\Features;
+use App\Support\Taxonomy;
 use Flux\Flux;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rule;
@@ -42,21 +43,31 @@ class Edit extends Component
             $this->authorize('update', $group);
             $this->group = $group;
             $this->name = $group->name;
-            $this->type = $group->type->value;
+            $this->type = $group->type->key;
             $this->description = (string) $group->description;
             $this->color = (string) $group->color;
             $this->membership_mode = $group->membership_mode->value;
             $this->parent_id = $group->parent_id;
         } else {
             $this->authorize('create', Group::class);
+            $keys = $this->typeOptions()->pluck('key');
+            $this->type = $keys->contains($this->type) ? $this->type : (string) $keys->last();
         }
+    }
+
+    /** Types offered in this school; an archived one stays while it is the group's own. */
+    private function typeOptions()
+    {
+        $original = $this->group?->getRawOriginal('type');
+
+        return app(Taxonomy::class)->options(TaxonomyKind::GroupType, app(CurrentSchool::class)->get(), $original);
     }
 
     protected function rules(): array
     {
         return [
             'name' => ['required', 'string', 'max:150'],
-            'type' => ['required', Rule::enum(GroupType::class)],
+            'type' => ['required', Rule::in($this->typeOptions()->pluck('key')->all())],
             'description' => ['nullable', 'string', 'max:2000'],
             'color' => ['nullable', 'regex:/^#[0-9a-fA-F]{6}$/'],
             'membership_mode' => ['required', Rule::enum(MembershipMode::class)],
@@ -151,7 +162,7 @@ class Edit extends Component
         $canChangeStructure = Auth::user()->can('create', Group::class);
 
         return view('livewire.groups.edit', [
-            'types' => GroupType::cases(),
+            'types' => $this->typeOptions(),
             'modes' => MembershipMode::cases(),
             // Leaders cannot change the hierarchy, so they get no list of other groups.
             'parents' => $canChangeStructure

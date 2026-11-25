@@ -2,8 +2,8 @@
 
 namespace App\Models;
 
+use App\Casts\AsTaxonomyTerm;
 use App\Enums\GroupRole;
-use App\Enums\GroupType;
 use App\Enums\MembershipMode;
 use App\Support\Appearance;
 use App\Support\CurrentSchool;
@@ -21,7 +21,7 @@ use Illuminate\Support\Str;
  * @property int $id
  * @property string $name
  * @property string $slug
- * @property GroupType $type
+ * @property TaxonomyTerm $type
  * @property MembershipMode $membership_mode
  * @property bool $is_system
  */
@@ -46,7 +46,7 @@ class Group extends Model
     protected function casts(): array
     {
         return [
-            'type' => GroupType::class,
+            'type' => AsTaxonomyTerm::class.':group_type',
             'membership_mode' => MembershipMode::class,
             'is_system' => 'boolean',
         ];

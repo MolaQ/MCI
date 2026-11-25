@@ -4,13 +4,14 @@ namespace App\Livewire\Events;
 
 use App\Domain\Media\Actions\ReplaceImage;
 use App\Enums\ContentVisibility;
-use App\Enums\EventCategory;
 use App\Enums\Feature;
+use App\Enums\TaxonomyKind;
 use App\Livewire\Concerns\WithImageUploads;
 use App\Models\Event;
 use App\Support\Audit;
 use App\Support\CurrentSchool;
 use App\Support\Features;
+use App\Support\Taxonomy;
 use Carbon\CarbonImmutable;
 use Flux\Flux;
 use Illuminate\Support\Facades\Auth;
@@ -62,7 +63,7 @@ class Edit extends Component
             $this->title = $event->title;
             $this->location = (string) $event->location;
             $this->all_day = (bool) $event->all_day;
-            $this->category = $event->category->value;
+            $this->category = $event->category->key;
             $this->visibility = $event->visibility->value;
             $this->description = (string) $event->description;
             $this->public_description = (string) $event->public_description;
@@ -74,16 +75,26 @@ class Edit extends Component
             $this->coverUrl = $event->cover?->url();
         } else {
             $this->authorize('create', Event::class);
+            $keys = $this->categoryOptions()->pluck('key');
+            $this->category = $keys->contains($this->category) ? $this->category : (string) $keys->last();
             $this->date = now()->addWeek()->format('Y-m-d');
             $this->start_time = '10:00';
         }
+    }
+
+    /** Categories offered in this school; an archived one stays while it is the event's own. */
+    private function categoryOptions()
+    {
+        $original = $this->eventId ? Event::query()->whereKey($this->eventId)->toBase()->value('category') : null;
+
+        return app(Taxonomy::class)->options(TaxonomyKind::EventCategory, app(CurrentSchool::class)->get(), $original);
     }
 
     protected function rules(): array
     {
         return [
             'title' => ['required', 'string', 'max:200'],
-            'category' => ['required', Rule::enum(EventCategory::class)],
+            'category' => ['required', Rule::in($this->categoryOptions()->pluck('key')->all())],
             'date' => ['required', 'date_format:Y-m-d'],
             'start_time' => [$this->all_day ? 'nullable' : 'required', 'nullable', 'date_format:H:i'],
             'end_date' => ['nullable', 'date_format:Y-m-d', 'after_or_equal:date'],
@@ -194,7 +205,7 @@ class Edit extends Component
     public function render()
     {
         return view('livewire.events.edit', [
-            'categories' => EventCategory::cases(),
+            'categories' => $this->categoryOptions(),
             'visibilities' => array_values(array_filter(ContentVisibility::selectable(),
                 fn ($v) => $v !== ContentVisibility::Public || app(Features::class)->enabled(Feature::PublicEvents) || $this->visibility === 'public')),
             'canPublishPublic' => Auth::user()->can('publishPublic', Event::class),
