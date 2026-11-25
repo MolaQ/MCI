@@ -9,6 +9,7 @@ use App\Models\Event;
 use App\Models\Group;
 use App\Models\Invite;
 use App\Models\School;
+use App\Models\Task;
 use App\Models\TaxonomyTerm;
 use App\Models\User;
 use App\Support\Appearance;
@@ -53,6 +54,7 @@ class AppServiceProvider extends ServiceProvider
             'announcement' => Announcement::class,
             'event' => Event::class,
             'taxonomy_term' => TaxonomyTerm::class,
+            'task' => Task::class,
         ]);
 
         // Site admins and school admins pass every *permission* check (dotted

@@ -56,4 +56,10 @@ return [
         'featured' => 'Wyróżniono kategorię na stronie głównej',
         'unfeatured' => 'Wyłączono wyróżnienie kategorii',
     ],
+    'task' => [
+        'created' => 'Utworzono zadanie',
+        'updated' => 'Zmieniono zadanie',
+        'status' => 'Zmieniono status zadania',
+        'deleted' => 'Usunięto zadanie',
+    ],
 ];

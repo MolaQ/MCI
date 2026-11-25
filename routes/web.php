@@ -22,6 +22,7 @@ use App\Livewire\Publicly;
 use App\Livewire\Settings;
 use App\Livewire\Settings\Profile;
 use App\Livewire\Site;
+use App\Livewire\Tasks;
 use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
 use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
 use Illuminate\Support\Facades\Route;
@@ -89,6 +90,13 @@ Route::middleware('auth')->group(function () {
         Route::livewire('/wydarzenia/nowe', Events\Edit::class)->name('events.create');
         Route::livewire('/wydarzenia/{event}', Events\Show::class)->whereNumber('event')->name('events.show');
         Route::livewire('/wydarzenia/{event}/edycja', Events\Edit::class)->whereNumber('event')->name('events.edit');
+    });
+
+    Route::middleware('feature:tasks')->group(function () {
+        Route::livewire('/zadania', Tasks\Index::class)->name('tasks.index');
+        Route::livewire('/zadania/nowe', Tasks\Edit::class)->name('tasks.create');
+        Route::livewire('/zadania/{task}', Tasks\Show::class)->whereNumber('task')->name('tasks.show');
+        Route::livewire('/zadania/{task}/edycja', Tasks\Edit::class)->whereNumber('task')->name('tasks.edit');
     });
 
     Route::post('/szkola/przelacz', SwitchSchoolController::class)->name('school.switch');

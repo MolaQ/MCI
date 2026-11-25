@@ -25,3 +25,6 @@ Schedule::command('auth:clear-resets')->everyFifteenMinutes();
 
 // Scheduled announcements and any delivery left pending (Step 3).
 Schedule::command('mci:deliver-announcements')->everyMinute()->withoutOverlapping();
+
+// To-Do reminders: due soon and overdue, idempotent via task_reminders (Step 5).
+Schedule::command('mci:task-reminders')->everyFifteenMinutes()->withoutOverlapping();

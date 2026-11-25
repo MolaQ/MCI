@@ -119,6 +119,7 @@ class Notifications extends Component
                 'mentions' => [__('Wzmianki o mnie'), __('Ktoś napisał @Twoje imię.')],
                 'important' => [__('Ważne i pilne komunikaty'), __('Priorytet „ważny” lub „pilny”.')],
                 'confirmations' => [__('Prośby o potwierdzenie'), __('Komunikaty wymagające potwierdzenia zapoznania się.')],
+                'tasks' => [__('Zadania'), __('Nowe przydziały, przypomnienia o terminach i wykonanie Twoich zadań.')],
                 'announcements' => [__('Wszystkie komunikaty'), __('Także zwykłe komunikaty — może być ich sporo.')],
             ],
         ]);

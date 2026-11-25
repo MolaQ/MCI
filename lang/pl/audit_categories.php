@@ -8,4 +8,5 @@ return [
     'invite' => 'Zaproszenia',
     'settings' => 'Ustawienia',
     'catalog' => 'Kategorie i typy',
+    'task' => 'Zadania',
 ];

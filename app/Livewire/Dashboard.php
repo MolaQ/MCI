@@ -6,6 +6,7 @@ use App\Enums\Permission;
 use App\Enums\UserStatus;
 use App\Models\Event;
 use App\Models\Group;
+use App\Models\Task;
 use App\Models\User;
 use App\Support\CurrentSchool;
 use Illuminate\Support\Facades\Auth;
@@ -26,6 +27,17 @@ class Dashboard extends Component
             ->latest('published_at')
             ->limit(5)
             ->get();
+    }
+
+    /** Open tasks due this week or overdue (plus undated urgent ones). */
+    #[Computed]
+    public function myTasks()
+    {
+        return Task::query()->assignedTo(Auth::user())->open()
+            ->where('tasks.school_id', app(CurrentSchool::class)->id())
+            ->where(fn ($q) => $q->where('tasks.due_at', '<=', now()->endOfWeek())->orWhere(fn ($u) => $u->whereNull('tasks.due_at')->where('tasks.priority', '>=', 4)))
+            ->orderByRaw('case when tasks.due_at is null then 1 else 0 end')->orderBy('tasks.due_at')->orderByDesc('tasks.priority')
+            ->limit(6)->get();
     }
 
     #[Computed]
