@@ -181,6 +181,17 @@
                     @endif
                 </div>
 
+                @if ($errors->any())
+                    <div role="alert" data-compose-errors class="space-y-1 rounded-mci border border-red-200 bg-red-50 p-3 text-sm text-red-800 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-200">
+                        <p class="flex items-center gap-1.5 font-medium"><flux:icon name="exclamation-triangle" variant="micro" /> {{ __('Komunikat nie został wysłany:') }}</p>
+                        <ul class="list-disc space-y-0.5 ps-5">
+                            @foreach (array_unique($errors->all()) as $message)
+                                <li>{{ $message }}</li>
+                            @endforeach
+                        </ul>
+                    </div>
+                @endif
+
                 <flux:button type="submit" variant="primary" icon="paper-airplane" class="w-full">
                     {{ $when === 'later' ? __('Zaplanuj komunikat') : __('Wyślij komunikat') }}
                 </flux:button>
