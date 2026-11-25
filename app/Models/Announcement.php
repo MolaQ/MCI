@@ -3,6 +3,8 @@
 namespace App\Models;
 
 use App\Enums\AnnouncementPriority;
+use App\Enums\Feature;
+use App\Support\Features;
 use Database\Factories\AnnouncementFactory;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -79,8 +81,10 @@ class Announcement extends Model
 
     public function scopePubliclyVisible(Builder $query): void
     {
+        $features = app(Features::class);
         $query->live()->where('announcements.is_public', true)
-            ->whereHas('school', fn ($s) => $s->where('is_active', true)->where('is_listed', true));
+            ->whereHas('school', fn ($s) => $s->where('is_active', true)->where('is_listed', true))
+            ->whereNotIn('announcements.school_id', $features->schoolsWithout(Feature::PublicFront)->merge($features->schoolsWithout(Feature::PublicAnnouncements)));
     }
 
     public function isLive(): bool

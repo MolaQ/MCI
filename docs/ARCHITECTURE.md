@@ -612,6 +612,18 @@ Adding a new option = add a default in `config('mci.appearance')`, a field on th
 
 ---
 
+### 8.2 Feature switches (site and school level)
+
+Every module and option that a school might not want is a case of `App\Enums\Feature` (labels in `lang/pl/features.php`): communication (komunikaty, wzmianki, obrazy, potwierdzenia, planowanie, komunikaty publiczne), events (moduł, publiczne, okładki, iCal), public front (portal, oferta, tryb TV), groups and onboarding (samodzielne dołączanie, logo grup, zaproszenia, kody QR) and the image editor (usuwanie tła). New features add a case; nothing else is needed to make them switchable.
+
+- **Site level** (*Witryna → Funkcje*, site admins): per feature `on` (master switch — off means off in every school) and `override` (whether schools may change it). Stored in the `features` setting.
+- **School level** (*Administracja → Funkcje szkoły*, `settings.manage`): the school's own on/off, only where the site allows it; locked or site-disabled features are shown read-only with the reason. Stored in `schools.settings.features`.
+- Effective value = parent module on **and** site on **and** (override not allowed **or** school value, default on). Resolved by `App\Support\Features` (memoised per request).
+- Enforcement is server-side, not only in menus: route middleware `feature:<key>` (404), the publishing actions (`PublishAnnouncement` rejects images / scheduling / public posts, strips mentions), policies (`GroupPolicy::join`), public queries (`publiclyVisible` / `publiclyListed` exclude schools with the portal or public events off) and `@feature('<key>')` in views.
+- Every change is audited: `features.site_updated` in the site journal, `school.feature_updated` in the school log.
+
+---
+
 ## 9. Implementation roadmap
 
 Each step ends with migrations + seeders + Pest tests + a short demo, and is its own PR.

@@ -2,11 +2,13 @@
 
 namespace App\Policies;
 
+use App\Enums\Feature;
 use App\Enums\MembershipMode;
 use App\Enums\Permission;
 use App\Models\Group;
 use App\Models\User;
 use App\Support\CurrentSchool;
+use App\Support\Features;
 
 /**
  * Groups always belong to one school and are only reachable while that
@@ -71,6 +73,7 @@ class GroupPolicy
     {
         return $this->inActiveSchool($group)
             && $group->membership_mode === MembershipMode::Open
+            && app(Features::class)->enabled(Feature::GroupSelfJoin, $group->school_id)
             && ! $group->members()->whereKey($actor->id)->exists();
     }
 
@@ -79,6 +82,7 @@ class GroupPolicy
         return $this->inActiveSchool($group)
             && ! $group->is_system
             && $group->membership_mode === MembershipMode::Open
+            && app(Features::class)->enabled(Feature::GroupSelfJoin, $group->school_id)
             && $group->members()->whereKey($actor->id)->exists();
     }
 

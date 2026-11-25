@@ -6,12 +6,14 @@ use App\Domain\Communication\Actions\PublishAnnouncement;
 use App\Domain\Communication\Audience;
 use App\Domain\Communication\AudienceGuard;
 use App\Enums\AnnouncementPriority;
+use App\Enums\Feature;
 use App\Enums\Permission;
 use App\Enums\Role;
 use App\Livewire\Concerns\WithImageUploads;
 use App\Models\Announcement;
 use App\Models\User;
 use App\Support\CurrentSchool;
+use App\Support\Features;
 use App\Support\Mentions;
 use App\Support\RichText;
 use Flux\Flux;
@@ -90,7 +92,8 @@ class Compose extends Component
     #[Computed]
     public function canPublishPublic(): bool
     {
-        return Auth::user()->can(Permission::EventsPublishPublic->value);
+        return Auth::user()->can(Permission::EventsPublishPublic->value)
+            && app(Features::class)->enabled(Feature::PublicAnnouncements);
     }
 
     #[Computed]
@@ -211,7 +214,9 @@ class Compose extends Component
     {
         $this->validateOnly('newImage', ['newImage' => $this->imageUploadRule()]);
 
-        if (count($this->images) >= config('mci.media.max_post_images')) {
+        if (app(Features::class)->disabled(Feature::AnnouncementImages)) {
+            $this->addError('newImage', __('Obrazy w komunikatach są wyłączone.'));
+        } elseif (count($this->images) >= config('mci.media.max_post_images')) {
             $this->addError('newImage', __('Możesz dodać najwyżej :count obrazów.', ['count' => config('mci.media.max_post_images')]));
         } elseif ($this->newImage) {
             $this->images[] = $this->newImage;

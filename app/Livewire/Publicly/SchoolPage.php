@@ -2,10 +2,12 @@
 
 namespace App\Livewire\Publicly;
 
+use App\Enums\Feature;
 use App\Enums\SchoolOfferKind;
 use App\Models\Announcement;
 use App\Models\Event;
 use App\Models\School;
+use App\Support\Features;
 use App\Support\Mentions;
 use App\Support\RichText;
 use Livewire\Attributes\Layout;
@@ -32,7 +34,9 @@ class SchoolPage extends Component
     public function render()
     {
         $school = School::query()->publiclyListed()->findOrFail($this->schoolId);
-        $offers = $school->offers()->where('is_active', true)->get();
+        $offers = app(Features::class)->enabled(Feature::PublicOffers, $school)
+            ? $school->offers()->where('is_active', true)->get()
+            : collect();
 
         return view('livewire.public.school', [
             'school' => $school,

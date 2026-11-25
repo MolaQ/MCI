@@ -75,6 +75,23 @@ class Mentions
     }
 
     /**
+     * Turns every mention into plain text (used when mentions are switched off).
+     */
+    public static function strip(string $html): string
+    {
+        if (! str_contains($html, 'data-type="mention"')) {
+            return $html;
+        }
+
+        [$doc, $root] = self::load($html);
+        foreach (iterator_to_array((new DOMXPath($doc))->query('//span[@data-type="mention"]')) as $span) {
+            $span->parentNode->replaceChild($doc->createTextNode($span->textContent), $span);
+        }
+
+        return self::save($doc, $root);
+    }
+
+    /**
      * Stores the mentions of one piece of content (replacing earlier ones).
      *
      * @param  list<int>  $userIds

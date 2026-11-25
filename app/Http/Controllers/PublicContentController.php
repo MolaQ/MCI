@@ -2,8 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\Feature;
 use App\Models\Announcement;
 use App\Models\Event;
+use App\Support\Features;
 use App\Support\Mentions;
 use Illuminate\Http\Response;
 use Illuminate\Support\Str;
@@ -25,6 +27,7 @@ class PublicContentController
     public function ics(int $event): Response
     {
         $e = Event::query()->publiclyVisible()->with('school:id,name')->findOrFail($event);
+        abort_if(app(Features::class)->disabled(Feature::EventIcs, $e->school_id), 404);
 
         $fmt = fn ($d) => $d->copy()->utc()->format('Ymd\THis\Z');
         $escape = fn (?string $s) => str_replace(['\\', ';', ',', "\r\n", "\n"], ['\\\\', '\;', '\,', '\n', '\n'], (string) $s);

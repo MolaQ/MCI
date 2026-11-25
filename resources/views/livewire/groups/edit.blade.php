@@ -40,8 +40,10 @@
                 </flux:field>
             </div>
 
+            @feature('groups.logos')
             <x-ui.image-editor model="logoUpload" :label="__('Logo grupy, koła lub klubu')" :current="$group?->logoUrl()" :remove="$group?->logo_media_id ? 'removeLogo' : null"
                                :presets="['1:1', 'free', '3:1']" aspect="1:1" :max-size="512" />
+            @endfeature
         </flux:card>
 
         <div class="flex items-center justify-between">

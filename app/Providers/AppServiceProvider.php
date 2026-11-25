@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Enums\Feature;
 use App\Enums\Role;
 use App\Models\Announcement;
 use App\Models\Event;
@@ -11,11 +12,13 @@ use App\Models\School;
 use App\Models\User;
 use App\Support\Appearance;
 use App\Support\CurrentSchool;
+use App\Support\Features;
 use App\Support\Settings;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\View;
@@ -28,6 +31,7 @@ class AppServiceProvider extends ServiceProvider
     {
         $this->app->singleton(Settings::class);
         $this->app->singleton(Appearance::class);
+        $this->app->scoped(Features::class);
         $this->app->scoped(CurrentSchool::class);
     }
 
@@ -70,5 +74,8 @@ class AppServiceProvider extends ServiceProvider
 
         // Lazy: settings are only read when a view actually uses them.
         View::share('appearance', $this->app->make(Appearance::class));
+
+        // @feature('events') … @endfeature — for the active school.
+        Blade::if('feature', fn (string $key) => app(Features::class)->enabled(Feature::from($key)));
     }
 }

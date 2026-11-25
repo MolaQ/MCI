@@ -3,12 +3,14 @@
 namespace App\Livewire\Groups;
 
 use App\Domain\Media\Actions\ReplaceImage;
+use App\Enums\Feature;
 use App\Enums\GroupType;
 use App\Enums\MembershipMode;
 use App\Livewire\Concerns\WithImageUploads;
 use App\Models\Group;
 use App\Support\Audit;
 use App\Support\CurrentSchool;
+use App\Support\Features;
 use Flux\Flux;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rule;
@@ -110,7 +112,7 @@ class Edit extends Component
             Audit::log('group.created', $group, ['name' => $group->name]);
         }
 
-        if ($this->logoUpload) {
+        if ($this->logoUpload && app(Features::class)->enabled(Feature::GroupLogos)) {
             app(ReplaceImage::class)->handle($group, 'logo_media_id', $this->logoUpload, 'logo', false, Auth::user(), 'logoUpload');
         }
 

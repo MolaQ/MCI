@@ -2,9 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\Feature;
 use App\Models\Group;
 use App\Models\User;
 use App\Support\CurrentSchool;
+use App\Support\Features;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -19,7 +21,7 @@ class MentionSearchController
     public function __invoke(Request $request, CurrentSchool $current): JsonResponse
     {
         $school = $current->get();
-        if (! $school) {
+        if (! $school || app(Features::class)->disabled(Feature::Mentions, $school)) {
             return response()->json([]);
         }
 

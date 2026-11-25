@@ -50,23 +50,27 @@ Route::middleware('throttle:240,1')->group(function () {
     Route::livewire('/', Publicly\Home::class)->name('home');
     Route::livewire('/szkoly/{slug}', Publicly\SchoolPage::class)->name('public.school');
     Route::get('/publiczne/wydarzenia/{event}', [PublicContentController::class, 'event'])->whereNumber('event')->name('public.event');
-    Route::get('/publiczne/wydarzenia/{event}.ics', [PublicContentController::class, 'ics'])->whereNumber('event')->name('public.event.ics');
+    Route::get('/publiczne/wydarzenia/{event}.ics', [PublicContentController::class, 'ics'])->whereNumber('event')->middleware('feature:events.ics')->name('public.event.ics');
     Route::get('/publiczne/komunikaty/{announcement}', [PublicContentController::class, 'announcement'])->whereNumber('announcement')->name('public.announcement');
-    Route::livewire('/tv', Publicly\Board::class)->name('tv');
+    Route::livewire('/tv', Publicly\Board::class)->middleware('feature:public.tv')->name('tv');
 });
 
 Route::middleware('auth')->group(function () {
     Route::livewire('/pulpit', Dashboard::class)->name('dashboard');
     Route::get('/wzmianki', MentionSearchController::class)->middleware('throttle:120,1')->name('mentions.search');
 
-    Route::livewire('/komunikaty', Communication\Center::class)->name('communication.index');
-    Route::livewire('/komunikaty/nowy', Communication\Compose::class)->name('communication.create');
-    Route::livewire('/komunikaty/{announcement}', Communication\Show::class)->whereNumber('announcement')->name('communication.show');
+    Route::middleware('feature:announcements')->group(function () {
+        Route::livewire('/komunikaty', Communication\Center::class)->name('communication.index');
+        Route::livewire('/komunikaty/nowy', Communication\Compose::class)->name('communication.create');
+        Route::livewire('/komunikaty/{announcement}', Communication\Show::class)->whereNumber('announcement')->name('communication.show');
+    });
 
-    Route::livewire('/wydarzenia', Events\Index::class)->name('events.index');
-    Route::livewire('/wydarzenia/nowe', Events\Edit::class)->name('events.create');
-    Route::livewire('/wydarzenia/{event}', Events\Show::class)->whereNumber('event')->name('events.show');
-    Route::livewire('/wydarzenia/{event}/edycja', Events\Edit::class)->whereNumber('event')->name('events.edit');
+    Route::middleware('feature:events')->group(function () {
+        Route::livewire('/wydarzenia', Events\Index::class)->name('events.index');
+        Route::livewire('/wydarzenia/nowe', Events\Edit::class)->name('events.create');
+        Route::livewire('/wydarzenia/{event}', Events\Show::class)->whereNumber('event')->name('events.show');
+        Route::livewire('/wydarzenia/{event}/edycja', Events\Edit::class)->whereNumber('event')->name('events.edit');
+    });
 
     Route::post('/szkola/przelacz', SwitchSchoolController::class)->name('school.switch');
 
@@ -77,11 +81,13 @@ Route::middleware('auth')->group(function () {
     Route::livewire('/grupy/{group}', Groups\Show::class)->name('groups.show');
     Route::livewire('/grupy/{group}/edycja', Groups\Edit::class)->name('groups.edit');
 
-    Route::livewire('/zaproszenia', Invites\Index::class)->name('invites.index');
-    Route::livewire('/zaproszenia/nowe', Invites\Create::class)->name('invites.create');
-    Route::livewire('/zaproszenia/{invite}', Invites\Show::class)->name('invites.show');
-    Route::get('/zaproszenia/{invite}/plakat', [InvitePosterController::class, 'poster'])->name('invites.poster');
-    Route::get('/zaproszenia/{invite}/qr.svg', [InvitePosterController::class, 'svg'])->name('invites.qr');
+    Route::middleware('feature:invites')->group(function () {
+        Route::livewire('/zaproszenia', Invites\Index::class)->name('invites.index');
+        Route::livewire('/zaproszenia/nowe', Invites\Create::class)->name('invites.create');
+        Route::livewire('/zaproszenia/{invite}', Invites\Show::class)->name('invites.show');
+        Route::get('/zaproszenia/{invite}/plakat', [InvitePosterController::class, 'poster'])->middleware('feature:invites.qr')->name('invites.poster');
+        Route::get('/zaproszenia/{invite}/qr.svg', [InvitePosterController::class, 'svg'])->middleware('feature:invites.qr')->name('invites.qr');
+    });
 
     Route::prefix('administracja')->name('admin.')->group(function () {
         Route::livewire('/uzytkownicy', Users\Index::class)->name('users.index');
@@ -90,6 +96,7 @@ Route::middleware('auth')->group(function () {
         Route::livewire('/uzytkownicy/{user}', Users\Edit::class)->name('users.edit');
         Route::livewire('/szkola', Site\SchoolEdit::class)->name('school');
         Route::livewire('/szkola/profil-publiczny', Admin\SchoolProfile::class)->name('school.profile');
+        Route::livewire('/szkola/funkcje', Admin\SchoolFeatures::class)->name('school.features');
         Route::livewire('/logi', AuditLog::class)->name('audit');
     });
 
@@ -98,6 +105,7 @@ Route::middleware('auth')->group(function () {
         Route::livewire('/szkoly/nowa', Site\SchoolEdit::class)->name('schools.create');
         Route::livewire('/szkoly/{school}', Site\SchoolEdit::class)->name('schools.edit');
         Route::livewire('/wyglad', Appearance::class)->name('appearance');
+        Route::livewire('/funkcje', Site\Features::class)->name('features');
         Route::livewire('/dziennik', AuditLog::class)->defaults('scope', 'site')->name('journal');
     });
 });

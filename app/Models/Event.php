@@ -4,6 +4,8 @@ namespace App\Models;
 
 use App\Enums\ContentVisibility;
 use App\Enums\EventCategory;
+use App\Enums\Feature;
+use App\Support\Features;
 use Database\Factories\EventFactory;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -66,7 +68,8 @@ class Event extends Model
         $query->select(array_map(fn ($c) => 'events.'.$c, self::PUBLIC_COLUMNS))
             ->where('events.visibility', ContentVisibility::Public->value)
             ->where('events.status', '!=', 'cancelled')
-            ->whereHas('school', fn ($s) => $s->where('is_active', true)->where('is_listed', true));
+            ->whereHas('school', fn ($s) => $s->where('is_active', true)->where('is_listed', true))
+            ->whereNotIn('events.school_id', app(Features::class)->schoolsWithout(Feature::PublicEvents)->merge(app(Features::class)->schoolsWithout(Feature::PublicFront)));
     }
 
     /**

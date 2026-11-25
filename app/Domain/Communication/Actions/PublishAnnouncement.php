@@ -6,6 +6,7 @@ use App\Domain\Communication\Audience;
 use App\Domain\Communication\AudienceGuard;
 use App\Domain\Media\Actions\StoreImage;
 use App\Enums\AnnouncementPriority;
+use App\Enums\Feature;
 use App\Enums\Permission;
 use App\Jobs\DeliverAnnouncement;
 use App\Models\Announcement;
@@ -13,6 +14,7 @@ use App\Models\Group;
 use App\Models\School;
 use App\Models\User;
 use App\Support\Audit;
+use App\Support\Features;
 use App\Support\Mentions;
 use App\Support\RichText;
 use Carbon\CarbonImmutable;
@@ -48,7 +50,25 @@ class PublishAnnouncement
             throw new AuthorizationException(__('Nie masz uprawnień do wysyłania komunikatów.'));
         }
 
+        $features = app(Features::class);
+        if ($features->disabled(Feature::Announcements, $school)) {
+            throw new AuthorizationException(__('Komunikaty są wyłączone w tej szkole.'));
+        }
+        $off = fn (Feature $f) => $features->disabled($f, $school);
+
         $isPublic = (bool) ($data['is_public'] ?? false);
+        if ($isPublic && $off(Feature::PublicAnnouncements)) {
+            throw ValidationException::withMessages(['is_public' => __('Komunikaty publiczne są wyłączone.')]);
+        }
+        if ($images && $off(Feature::AnnouncementImages)) {
+            throw ValidationException::withMessages(['images' => __('Obrazy w komunikatach są wyłączone.')]);
+        }
+        if (! empty($data['publish_at']) && $off(Feature::AnnouncementScheduling)) {
+            throw ValidationException::withMessages(['publish_at' => __('Planowanie publikacji jest wyłączone.')]);
+        }
+        if ($off(Feature::AnnouncementConfirmation)) {
+            $data['requires_confirmation'] = false;
+        }
         if ($isPublic && ! $author->can(Permission::EventsPublishPublic->value)) {
             throw new AuthorizationException(__('Nie możesz publikować treści publicznych.'));
         }
@@ -60,7 +80,9 @@ class PublishAnnouncement
         if (RichText::isBlank($body)) {
             throw ValidationException::withMessages(['body' => __('Treść komunikatu jest wymagana.')]);
         }
-        $mentions = Mentions::normalize($body, $school);
+        $mentions = $off(Feature::Mentions)
+            ? ['html' => Mentions::strip($body), 'users' => [], 'groups' => []]
+            : Mentions::normalize($body, $school);
 
         // Mentioned groups notify their members only if the author may address them.
         $notifiableGroups = Group::query()->whereKey($mentions['groups'])->get()
