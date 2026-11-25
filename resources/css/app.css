@@ -1,0 +1,65 @@
+@import 'tailwindcss';
+@import '../../vendor/livewire/flux/dist/flux.css';
+
+@source '../views';
+@source '../../vendor/livewire/flux/stubs/**/*.blade.php';
+@source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+/*
+ * Design tokens.
+ *
+ * Runtime values (--mci-primary, --mci-radius, --color-accent …) are injected
+ * into <head> from Administracja → Wygląd (App\Support\Appearance), so the
+ * school can re-brand the app without rebuilding assets. The values below are
+ * only the build-time fallbacks.
+ */
+@theme {
+    /* System fonts: no external font CDN (fast, RODO-friendly, works offline in the PWA). */
+    --font-sans: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif,
+        'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+
+    --color-primary: var(--mci-primary, #1d4ed8);
+    --color-primary-foreground: var(--mci-primary-foreground, #ffffff);
+    --color-danger: var(--mci-danger, #dc2626);
+
+    --radius-mci: var(--mci-radius, 0.5rem);
+}
+
+@layer theme {
+    :root {
+        --color-accent: var(--mci-primary, var(--color-blue-700));
+        --color-accent-content: var(--mci-primary, var(--color-blue-700));
+        --color-accent-foreground: var(--mci-primary-foreground, var(--color-white));
+    }
+
+    .dark {
+        --color-accent: var(--mci-primary, var(--color-blue-500));
+        --color-accent-content: var(--color-blue-400);
+        --color-accent-foreground: var(--mci-primary-foreground, var(--color-white));
+    }
+}
+
+@layer base {
+    *,
+    ::after,
+    ::before,
+    ::backdrop,
+    ::file-selector-button {
+        border-color: var(--color-gray-200, currentColor);
+    }
+
+    [x-cloak] {
+        display: none !important;
+    }
+}
+
+/* Flux controls follow the configurable corner radius. */
+[data-flux-button],
+[data-flux-input] input,
+[data-flux-control],
+[data-flux-select-button],
+[data-flux-card] {
+    border-radius: var(--radius-mci);
+}

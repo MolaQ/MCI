@@ -1,8 +1,8 @@
 # MCI — Mechaniczne Centrum Informacyjne
 
-**Architecture, data model, permission model and roadmap (proposal v0.1)**
+**Architecture, data model, permission model and roadmap (v0.2)**
 
-Status: proposal for review. Nothing is scaffolded yet. Open questions that affect Step 1 are collected at the end (§10).
+Status: Steps 0 and 1 implemented. Decisions taken with the school are recorded in §10; the target hosting is **shared PHP hosting** (§2.2).
 
 ---
 
@@ -61,30 +61,31 @@ flowchart LR
 
 | Concern | Choice | Notes |
 |---|---|---|
-| Framework | Laravel (current stable, 12.x/13.x), PHP 8.3+ | Livewire starter kit as the base (auth screens, layout). |
-| UI | Livewire 4 (+ Alpine.js bundled), Tailwind CSS v4, Vite | Livewire 4 single-file / multi-file components for pages; Blade components for UI primitives. |
+| Framework | Laravel 13, PHP 8.3+ | Plain skeleton + Fortify (the official starter kit lagged behind Laravel 13 / Livewire 4 at the time). |
+| UI | Livewire 4 (+ Alpine.js bundled), Tailwind CSS v4, Vite | Class-based Livewire page components (`app/Livewire`), Blade components for UI primitives. System font stack (no font CDN). |
 | UI kit | **Flux UI (free tier)** for inputs, modals, dropdowns, tables; own Blade components for domain widgets | Flux is the official Livewire kit and plays well with `wire:model`. If you prefer zero vendor UI, the same layout works with plain Blade components (see §8). |
-| Auth | Laravel Fortify (via starter kit): login, password reset, optional 2FA | 2FA recommended for anyone with `alerts.send` / admin. |
+| Auth | Laravel Fortify: e-mail + password login, password reset / account set-up links, no public registration | 2FA for privileged roles planned in Step 9. |
 | RBAC | `spatie/laravel-permission` for global roles & permissions | Group/event-scoped leadership is modelled in our own pivots (§4). |
 | Web Push | `laravel-notification-channels/webpush` (uses `minishlink/web-push`) | VAPID keys in `.env`. Push subscriptions table from the package. |
 | Queues | `QUEUE_CONNECTION=database` by default, `redis` on VPS | Named queues: `alerts`, `push`, `default`, `mail`. |
 | Real-time | `BROADCAST_CONNECTION=null` + `wire:poll` (baseline) or `reverb` (VPS) | Alert ack board polls every 3 s in baseline mode; pushes instantly with Reverb. |
 | QR codes | `simplesoftwareio/simple-qrcode` (or `bacon/bacon-qr-code`) | For invite links, printable PDF/PNG. |
-| Audit | `spatie/laravel-activitylog` (optional) or own `audit_logs` table | Required at least for alerts and permission changes. |
-| Tests / quality | Pest, Laravel Pint, Larastan (level 6+), GitHub Actions CI | |
+| Audit | own `audit_logs` table (`App\Support\Audit::log()`) | Accounts, access, groups, settings now; alerts later. |
+| Tests / quality | Pest, Laravel Pint, GitHub Actions CI on SQLite **and MySQL 8** | Larastan can be added later. |
 
 ### 2.2 Deployment profiles
 
-Same codebase, different `.env`:
+**Decision: the school uses shared PHP hosting (Profile A).** Everything must work with PHP + MySQL + one cron entry. Profile B stays possible by changing `.env` only. Step-by-step instructions: [`DEPLOYMENT.md`](DEPLOYMENT.md).
 
-| | **Profile A — shared hosting** (PHP + MySQL + cron) | **Profile B — VPS** |
+| | **Profile A — shared hosting (default, target)** | **Profile B — VPS (optional later)** |
 |---|---|---|
-| Queue | `database`; cron runs `schedule:run` every minute, scheduler starts `queue:work --stop-when-empty --queue=alerts,push,default,mail` | `redis`; Supervisor keeps `queue:work` (alerts worker separate) running |
-| Real-time | `wire:poll` | Laravel Reverb behind Nginx |
-| Cache / session | `database` / `file` | `redis` |
-| Alert latency | up to ~60 s worst case if no worker is running → **alerts are also dispatched synchronously-after-response** (`dispatch()->afterResponse()` fallback for the first push batch) so they do not wait for cron | seconds |
+| Cron | `* * * * * php artisan schedule:run` | same |
+| Queue | `QUEUE_CONNECTION=database`, `MCI_QUEUE_VIA_SCHEDULER=true`: the scheduler starts `queue:work --stop-when-empty --max-time=50 --queue=alerts,push,default,mail` every minute (`routes/console.php`). Fallback: a second cron line running the same command if the host forbids process spawning. | `redis`; Supervisor keeps `queue:work` running, `MCI_QUEUE_VIA_SCHEDULER=false` |
+| Real-time | `MCI_REALTIME=poll`: Livewire `wire:poll` every `MCI_POLL_SECONDS` (5 s default; 3 s on the alert ack board) | `MCI_REALTIME=broadcast` + Laravel Reverb |
+| Cache / session | `database` / `database` | `redis` |
+| Alert latency | Queue work starts within ~60 s, so **alerts never wait for cron**: the first push batch is dispatched after the HTTP response (`dispatch()->afterResponse()`), remaining batches and escalations go through the queue. Open apps also poll for active alerts. | seconds |
 
-> Recommendation: Profile B (any small VPS, 2 GB RAM) is strongly preferred because of the safety-alert latency requirement. Profile A works but is a compromise.
+Every UI feature that would use WebSockets must have a polling path; this is a hard rule for Steps 3–8.
 
 ### 2.3 Application layout
 
@@ -367,13 +368,21 @@ Three layers, checked together in Laravel **Policies**:
 | `invites.create` | ✓ | ✓ | | |
 | `announcements.publish.any` (any audience) | ✓ | ✓ | | |
 | `announcements.publish.own_groups` | ✓ | ✓ | ✓ | |
-| `alerts.send` | ✓ | ✓* | | |
+| `alerts.send` | ✓ | * | | |
 | `alerts.send.drill` | ✓ | ✓ | | |
 | `alerts.view_all_stats` | ✓ | ✓ | | |
 | `events.create` | ✓ | ✓ | ✓ | |
 | `tasks.assign.any` | ✓ | ✓ | | |
 | `stats.view` | ✓ | ✓ | | |
-| `settings.manage` | ✓ | | | |
+| `roles.manage` (grant roles / individual permissions) | ✓ | | | |
+| `audit.view` | ✓ | ✓ | | |
+| `settings.manage` (incl. appearance) | ✓ | | | |
+
+\* **Decision:** `alerts.send` is not part of any role except admin. It is granted **directly to individual users** (Spatie direct permissions) by someone with `roles.manage`, e.g. the safety officer or reception. The admin user form has an "Uprawnienia indywidualne" panel for this. Coordinators get only `alerts.send.drill` by default.
+
+Students (`student` role) exist in the schema but have no permissions and are optional in phase one; student accounts can be imported or created later without schema changes. Group type `class` is ready for school classes.
+
+The matrix is seeded from `App\Enums\Role::defaultPermissions()`. The seeder is idempotent and does not overwrite later changes an admin made to a role.
 
 \* `alerts.send` can also be granted **directly to an individual user** (Spatie direct permissions), e.g. the school safety inspector, without making them a coordinator. That matches "triggerable only by users with explicit permission".
 
@@ -509,7 +518,17 @@ Honest summary for staff: *MCI reaches you reliably when notifications are allow
 ## 8. UI approach
 
 - **Layout**: desktop sidebar (Pulpit, Alarmy, Ogłoszenia, Wydarzenia, Zadania, Kalendarz, Grupy, Administracja), mobile **bottom navigation** with 4–5 items and a prominent alert badge — this is a phone-first app for staff.
-- **Components**: Flux (free) for form controls/modals/dropdowns + our `x-ui.*` primitives + `x-app.*` domain widgets. Tailwind v4 theme tokens in `resources/css/app.css` (school colours, semantic `danger/warning/success`), dark mode via `class`.
+- **Components**: Flux (free) for form controls, tables, modals, dropdowns, toasts + our `x-ui.*` primitives (`page-header`, `stat`, `empty-state`) + `x-app.*` domain widgets (`brand`, `user-menu`, `group-chip`). Dark mode via Flux appearance (`class` strategy).
+
+### 8.1 Configurable theming (decision)
+
+Three layers, so the school can re-brand without a developer or a rebuild:
+
+1. **Design tokens** in `resources/css/app.css` (`@theme`): `--color-primary`, `--color-primary-foreground`, `--color-danger`, `--radius-mci`, each reading a runtime CSS variable (`var(--mci-primary, <fallback>)`). Use them as Tailwind utilities: `bg-primary`, `text-primary-foreground`, `bg-danger`, `rounded-mci`.
+2. **Runtime variables**: `App\Support\Appearance` merges `config/mci.php` defaults with the `appearance` row of the `settings` table and prints a `<style>` block in `<head>` with `--mci-*` and Flux's `--color-accent*` variables. Flux buttons, links, checkboxes and our own components all follow the school colour. Values are validated as `#rrggbb` and sanitised again on output.
+3. **Admin screen** *Administracja → Wygląd* (`settings.manage`): school name and short name, logo upload, primary colour, text-on-primary colour, alarm colour, corner radius (none → xl), default theme (system / light / dark), live preview, reset to defaults. Users can still choose their own light/dark mode in the user menu.
+
+Adding a new option = add a default in `config('mci.appearance')`, a field on the screen and, if visual, a CSS variable in `Appearance::cssVariables()`.
 - **Audience picker** (`livewire/components/audience-picker`): searchable multi-select of groups (chips coloured by type) + individual users, showing live "Odbiorców: 47" count from the resolver before sending — this is the core UX fix for the "noise" problem.
 - Livewire 4 conventions: full-page components for routes, `#[Computed]` for queries, lazy loading for dashboard cards, `wire:poll.visible` only on the ack board/badges.
 - Accessibility: large tap targets on the alarm screen, colour + text (not colour alone) for statuses.
@@ -522,8 +541,8 @@ Each step ends with migrations + seeders + Pest tests + a short demo, and is its
 
 | Step | Scope | Done when |
 |---|---|---|
-| **0. Foundations** | Laravel + Livewire starter kit, Tailwind v4, Flux, PL locale & timezone, Pint/Larastan/Pest, GitHub Actions CI, `.env.example` for both deployment profiles, base layout (sidebar + bottom nav), README with local setup | `composer test` green in CI; login works in Polish |
-| **1. Users, roles, groups** | users extension, Spatie roles/permissions seeder, groups + `group_user`, admin screens (users CRUD, CSV import, group management, membership), policies for groups, audit log | admin can provision staff and put them into multiple groups; leaders manage own groups |
+| **0. Foundations** ✅ | Laravel + Livewire starter kit, Tailwind v4, Flux, PL locale & timezone, Pint/Larastan/Pest, GitHub Actions CI, `.env.example` for both deployment profiles, base layout (sidebar + bottom nav), README with local setup | `composer test` green in CI; login works in Polish |
+| **1. Users, roles, groups** ✅ | users extension, Spatie roles/permissions seeder, groups + `group_user`, admin screens (users CRUD, CSV import, group management, membership), policies for groups, audit log | admin can provision staff and put them into multiple groups; leaders manage own groups |
 | **2. Invites & QR onboarding** | invites, multi-group invites, `/join/{token}` flows, QR generation/printing, invite expiry/limits, onboarding wizard shell | a teacher scans a poster QR and lands in 3 groups |
 | **3. Audience + announcements + notification centre** | `audience_targets`, `AudienceResolver`, audience picker, announcements with read/confirm, database notifications bell, e-mail notifications | a post to "Wychowawcy ∪ Jan Kowalski" reaches exactly those people |
 | **4. PWA + Web Push** | manifest, service worker, install guidance (incl. iOS), push subscription management, test push, VAPID config, dead-endpoint cleanup | installed PWA on Android & iPhone receives a test push |
@@ -537,11 +556,21 @@ Later / optional: students role, SMS gateway fallback, Google/Microsoft SSO, cal
 
 ---
 
-## 10. Questions before Step 0/1
+## 10. Decisions (answered 2026-11-25)
 
-1. **Hosting capability**: is a small VPS (or any host with long-running processes / Supervisor) realistic? It decides alert latency (§2.2). *Default if unknown: build for both, recommend VPS.*
-2. **Login method**: e-mail + password only, or does the school use **Google Workspace for Education / Microsoft 365** (SSO would remove passwords and make provisioning easier)? *Default: e-mail + password, SSO-ready.*
-3. **Who sends safety alerts** in practice (management only, or also e.g. caretaker/reception)? Confirms whether `alerts.send` stays coordinator + individually granted. *Default: as in §4.2.*
-4. **Scale**: roughly how many staff accounts (50? 150?) and are students expected within a year? Affects batching and whether to model classes now. *Default: ~150 staff, students later.*
-5. **UI kit**: OK with **Flux UI (free)** + Tailwind, or prefer pure Tailwind/Blade components with no vendor kit? *Default: Flux free.*
-6. **Announcements**: is the targeted information feed (§3.4) wanted in the MVP alongside alerts and tasks, or should alerts + tasks come first? *Default: in MVP (Step 3), since it addresses the "noise" problem directly.*
+| # | Question | Decision | Consequence |
+|---|---|---|---|
+| 1 | Hosting | **Shared PHP hosting** (PHP + MySQL + cron); keep `.env` switchable to a VPS | Profile A is the target (§2.2); polling fallback mandatory; scheduler drains the queue |
+| 2 | Login | **E-mail + password**; accounts created by admins (form or CSV import) and, from Step 2, via QR / invite tokens | Fortify without registration; set-up links e-mailed to provisioned staff |
+| 3 | Who sends alerts | **Anyone explicitly granted the permission** | `alerts.send` is an individual grant (§4.2), not tied to a role |
+| 4 | Scale | **~70 staff** at launch; students added gradually and optionally | `student` role and `class` group type exist; nothing requires student accounts |
+| 5 | UI kit | Our call, with **strong configurability** | Flux UI free + Tailwind v4 + runtime design tokens and an appearance screen (§8.1) |
+| 6 | Announcements in v1 | Yes if they share the targeting engine | They do (`audience_targets` + `AudienceResolver`, §3.3), so they stay as Step 3, before alerts |
+
+### What Step 0 + 1 delivered
+
+- Laravel 13, Livewire 4, Flux, Fortify, Spatie permission, Pest; Polish locale and `Europe/Warsaw`; CI on SQLite and MySQL 8 (also verified locally on MariaDB 10.11).
+- Tables: `users` (first/last name, status `invited/active/suspended`, phone, soft deletes), Spatie role/permission tables, `groups` (type, parent, colour, membership mode, system flag), `group_user` (member/leader), `settings`, `audit_logs`.
+- Screens: login / forgot password / set password (PL); dashboard; users list with search, filters, suspend, send set-up link; user form with roles, individual permissions and multi-group membership; CSV import with dry-run preview; groups list, detail (members, add/remove, promote leader, join/leave open groups), create/edit; appearance settings; audit log; own profile and password change.
+- Rules enforced in policies and covered by 46 tests: suspended users cannot log in and are logged out mid-session; leaders manage members of their own group only; only `groups.manage` promotes leaders; only `roles.manage` changes access and nobody edits their own access; only admins edit admins or grant the admin role; system groups cannot be deleted.
+- Seeders: idempotent roles/permissions, starter groups (Wszyscy pracownicy, Nauczyciele, Wychowawcy, Wolontariat…), first admin from `.env`; `DemoSeeder` with 70 staff for local testing.
