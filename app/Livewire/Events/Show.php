@@ -19,7 +19,7 @@ class Show extends Component
 
     public function render()
     {
-        $event = Event::query()->with(['school', 'owner'])->findOrFail($this->eventId);
+        $event = Event::query()->with(['school', 'owner', 'cover'])->findOrFail($this->eventId);
         $this->authorize('view', $event);
 
         return view('livewire.events.show', ['event' => $event])->title($event->title);

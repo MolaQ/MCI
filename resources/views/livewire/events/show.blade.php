@@ -19,6 +19,9 @@
                 <flux:badge size="sm" color="red">{{ __('Odwołane') }}</flux:badge>
             @endif
         </div>
+        @if ($event->cover)
+            <img src="{{ $event->cover->url() }}" alt="" width="{{ $event->cover->width }}" height="{{ $event->cover->height }}" class="aspect-video w-full rounded-mci object-cover" />
+        @endif
         <flux:heading size="xl" level="1">{{ $event->title }}</flux:heading>
         <div class="grid gap-3 text-sm sm:grid-cols-2">
             <div class="flex items-center gap-2"><flux:icon name="calendar" variant="mini" class="text-zinc-400" /> {{ $event->timeLabel() }}</div>

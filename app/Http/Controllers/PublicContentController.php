@@ -17,7 +17,7 @@ class PublicContentController
 {
     public function event(int $event): View
     {
-        $model = Event::query()->publiclyVisible()->with('school:id,name,short_name,slug,color,address,city')->findOrFail($event);
+        $model = Event::query()->publiclyVisible()->with('school:id,name,short_name,slug,color,logo_media_id,address,city')->findOrFail($event);
 
         return view('public.event', ['event' => $model]);
     }
@@ -52,7 +52,7 @@ class PublicContentController
 
     public function announcement(int $announcement): View
     {
-        $model = Announcement::query()->publiclyVisible()->with('school:id,name,short_name,slug,color')
+        $model = Announcement::query()->publiclyVisible()->with('school:id,name,short_name,slug,color,logo_media_id')
             ->findOrFail($announcement, ['id', 'school_id', 'title', 'body', 'priority', 'published_at']);
 
         return view('public.announcement', ['announcement' => $model, 'body' => Mentions::forPublic($model->body)]);

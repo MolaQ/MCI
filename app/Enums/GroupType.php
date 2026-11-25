@@ -11,6 +11,8 @@ enum GroupType: string
     case SchoolClass = 'class';
     case Volunteering = 'volunteering';
     case Sport = 'sport';
+    case Club = 'club';
+    case Association = 'association';
     case Custom = 'custom';
 
     public function label(): string
@@ -31,6 +33,8 @@ enum GroupType: string
             self::SchoolClass => '#0891b2',
             self::Volunteering => '#db2777',
             self::Sport => '#16a34a',
+            self::Club => '#ca8a04',
+            self::Association => '#0d9488',
             self::Custom => '#475569',
         };
     }

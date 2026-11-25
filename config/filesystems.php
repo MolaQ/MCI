@@ -38,6 +38,16 @@ return [
             'report' => false,
         ],
 
+        // Uploaded images (logos, covers, post images). Never web-served
+        // directly: MediaController checks access, so no storage:link and
+        // no APP_URL dependency on shared hosting.
+        'media' => [
+            'driver' => 'local',
+            'root' => storage_path('app/media'),
+            'throw' => true,
+            'report' => false,
+        ],
+
         'public' => [
             'driver' => 'local',
             'root' => storage_path('app/public'),

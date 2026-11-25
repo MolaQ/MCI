@@ -2,6 +2,7 @@
 
 namespace App\Support;
 
+use App\Models\Media;
 use Illuminate\Support\Facades\Storage;
 
 /**
@@ -23,6 +24,9 @@ class Appearance
     ];
 
     public const THEMES = ['system', 'light', 'dark'];
+
+    /** @var array<int, ?string> */
+    private array $logoUrls = [];
 
     public function __construct(private Settings $settings) {}
 
@@ -52,8 +56,16 @@ class Appearance
         return (string) $this->get('short_name');
     }
 
+    /**
+     * System logo. Stored as a Media record (served by the app, so it works
+     * without storage:link); older installs may still have a public-disk path.
+     */
     public function logoUrl(): ?string
     {
+        if ($id = $this->get('logo_media_id')) {
+            return $this->logoUrls[$id] ??= Media::query()->find($id)?->url();
+        }
+
         $path = $this->get('logo_path');
 
         return $path ? Storage::disk('public')->url($path) : null;

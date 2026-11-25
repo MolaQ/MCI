@@ -97,6 +97,16 @@ class Group extends Model
         $query->where('groups.school_id', app(CurrentSchool::class)->id());
     }
 
+    public function logoMedia(): BelongsTo
+    {
+        return $this->belongsTo(Media::class, 'logo_media_id');
+    }
+
+    public function logoUrl(): ?string
+    {
+        return $this->logo_media_id ? $this->logoMedia?->url() : null;
+    }
+
     public function parent(): BelongsTo
     {
         return $this->belongsTo(Group::class, 'parent_id');

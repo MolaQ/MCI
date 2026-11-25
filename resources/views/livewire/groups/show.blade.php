@@ -1,5 +1,5 @@
 <div class="space-y-6">
-    <x-ui.page-header :title="$group->name" :subtitle="$group->type->label().' · '.$group->membership_mode->label()">
+    <x-ui.page-header :title="$group->name" :image="$group->logoUrl()" :subtitle="$group->type->label().' · '.$group->membership_mode->label()">
         <x-slot:actions>
             <flux:button variant="ghost" icon="arrow-left" :href="route('groups.index')" wire:navigate>{{ __('Grupy') }}</flux:button>
             @can('join', $group)

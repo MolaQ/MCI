@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\InvitePosterController;
 use App\Http\Controllers\JoinController;
+use App\Http\Controllers\MediaController;
 use App\Http\Controllers\MentionSearchController;
 use App\Http\Controllers\PublicContentController;
 use App\Http\Controllers\SwitchSchoolController;
@@ -37,6 +38,10 @@ Route::prefix('dolacz')->name('join.')->group(function () {
         Route::get('/{any}', fn () => response()->view('join.invalid', [], 404))->where('any', '.*')->name('invalid');
     });
 });
+
+// Images: access is checked per file (public logos/covers vs private media).
+Route::get('/media/{uuid}.{ext}', [MediaController::class, 'show'])
+    ->whereUuid('uuid')->where('ext', 'webp|png')->middleware('throttle:600,1')->name('media.show');
 
 /*
 | Public front — no login (Step 3). Only "publiclyVisible" data is read here.

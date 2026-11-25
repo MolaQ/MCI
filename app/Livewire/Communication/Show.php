@@ -38,7 +38,7 @@ class Show extends Component
     #[Computed]
     public function announcement(): Announcement
     {
-        return Announcement::query()->with(['author', 'school', 'audience'])->findOrFail($this->announcementId);
+        return Announcement::query()->with(['author', 'school', 'audience', 'images'])->findOrFail($this->announcementId);
     }
 
     #[Computed]

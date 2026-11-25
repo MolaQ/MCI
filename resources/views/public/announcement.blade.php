@@ -7,6 +7,7 @@
             </div>
             <h1 class="text-3xl font-bold text-zinc-900 dark:text-white">{{ $announcement->title }}</h1>
             <div class="mci-prose text-zinc-800 dark:text-zinc-100">{!! $body !!}</div>
+            <x-ui.gallery :images="$announcement->images()->where('is_public', true)->get()" />
         </flux:card>
     </div>
 </x-layouts::public>

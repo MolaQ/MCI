@@ -35,6 +35,7 @@
                 </header>
 
                 <div class="mci-prose text-zinc-800 dark:text-zinc-100">{!! $a->body !!}</div>
+                <x-ui.gallery :images="$a->images" />
 
                 @if ($a->requires_confirmation && $this->receipt)
                     <div class="flex flex-col gap-3 rounded-mci border border-violet-200 bg-violet-50 p-4 sm:flex-row sm:items-center sm:justify-between dark:border-violet-500/30 dark:bg-violet-500/10">

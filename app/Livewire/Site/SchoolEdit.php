@@ -2,8 +2,10 @@
 
 namespace App\Livewire\Site;
 
+use App\Domain\Media\Actions\ReplaceImage;
 use App\Enums\Permission;
 use App\Enums\ProfileVisibility;
+use App\Livewire\Concerns\WithImageUploads;
 use App\Models\School;
 use App\Support\Audit;
 use App\Support\CurrentSchool;
@@ -21,6 +23,11 @@ use Livewire\Component;
  */
 class SchoolEdit extends Component
 {
+    use WithImageUploads;
+
+    /** Site admins only: logo of the school being edited. */
+    public $logoUpload = null;
+
     public ?School $school = null;
 
     public string $name = '';
@@ -83,12 +90,25 @@ class SchoolEdit extends Component
             'city' => ['nullable', 'string', 'max:100'],
             'email_domains' => ['nullable', 'string', 'max:500', 'regex:/^\s*([a-z0-9.-]+\.[a-z]{2,})(\s*,\s*[a-z0-9.-]+\.[a-z]{2,})*\s*$/i'],
             'max_profile_visibility' => ['required', Rule::enum(ProfileVisibility::class)],
+            'logoUpload' => $this->imageUploadRule(),
         ];
     }
 
     protected function validationAttributes(): array
     {
         return ['email_domains' => __('domeny e-mail'), 'short_name' => __('skrót'), 'slug' => __('adres')];
+    }
+
+    public function updatedLogoUpload(): void
+    {
+        $this->validateOnly('logoUpload');
+    }
+
+    public function removeLogo(ReplaceImage $replace): void
+    {
+        abort_unless($this->isSiteAdmin() && $this->school, 403);
+        $replace->handle($this->school, 'logo_media_id', null, 'logo', true, Auth::user(), 'logoUpload', remove: true);
+        Flux::toast(text: __('Usunięto logo szkoły.'));
     }
 
     public function save()
@@ -125,6 +145,11 @@ class SchoolEdit extends Component
             $this->school = School::query()->create($attributes);
             SystemGroupsSeeder::seedFor($this->school);
             Audit::site('school.created', $this->school, ['name' => $this->school->name]);
+        }
+
+        if ($this->logoUpload) {
+            app(ReplaceImage::class)->handle($this->school, 'logo_media_id', $this->logoUpload, 'logo', true, Auth::user(), 'logoUpload');
+            $this->logoUpload = null;
         }
 
         Flux::toast(variant: 'success', text: __('Zapisano szkołę.'));

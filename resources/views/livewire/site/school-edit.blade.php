@@ -18,6 +18,8 @@
             </div>
             <flux:input wire:model="city" :label="__('Miejscowość')" :disabled="! $siteAdmin" />
             @if ($siteAdmin)
+                <x-ui.image-editor model="logoUpload" :label="__('Logo szkoły')" :current="$school?->logoUrl()" :remove="$school ? 'removeLogo' : null"
+                                   :presets="['free', '1:1', '3:1', '4:1']" :max-size="1024" />
                 <flux:switch wire:model="is_active" :label="__('Szkoła aktywna')" :description="__('Nieaktywna szkoła znika z przełącznika, a jej zaproszenia przestają działać.')" />
             @endif
         </flux:card>

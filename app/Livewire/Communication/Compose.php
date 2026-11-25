@@ -8,6 +8,7 @@ use App\Domain\Communication\AudienceGuard;
 use App\Enums\AnnouncementPriority;
 use App\Enums\Permission;
 use App\Enums\Role;
+use App\Livewire\Concerns\WithImageUploads;
 use App\Models\Announcement;
 use App\Models\User;
 use App\Support\CurrentSchool;
@@ -22,10 +23,19 @@ use Livewire\Attributes\Computed;
 use Livewire\Attributes\Title;
 use Livewire\Attributes\Url;
 use Livewire\Component;
+use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
 
 #[Title('Nowy komunikat')]
 class Compose extends Component
 {
+    use WithImageUploads;
+
+    /** The editor uploads one finished image here; it is moved into $images. */
+    public $newImage = null;
+
+    /** @var array<int, TemporaryUploadedFile> */
+    public array $images = [];
+
     public string $title = '';
 
     public string $body = '';
@@ -187,12 +197,40 @@ class Compose extends Component
             'when' => ['required', Rule::in(['now', 'later'])],
             'publish_at' => ['nullable', 'required_if:when,later', 'date', 'after:now'],
             'expiry' => ['nullable', Rule::in(['', '1', '7', '30'])],
+            'images' => ['array', 'max:'.config('mci.media.max_post_images')],
+            'images.*' => $this->imageUploadRule(),
         ];
     }
 
     protected function validationAttributes(): array
     {
         return ['title' => __('tytuł'), 'body' => __('treść'), 'publish_at' => __('termin publikacji')];
+    }
+
+    public function updatedNewImage(): void
+    {
+        $this->validateOnly('newImage', ['newImage' => $this->imageUploadRule()]);
+
+        if (count($this->images) >= config('mci.media.max_post_images')) {
+            $this->addError('newImage', __('Możesz dodać najwyżej :count obrazów.', ['count' => config('mci.media.max_post_images')]));
+        } elseif ($this->newImage) {
+            $this->images[] = $this->newImage;
+        }
+        $this->newImage = null;
+    }
+
+    public function removeImage(int $index): void
+    {
+        unset($this->images[$index]);
+        $this->images = array_values($this->images);
+    }
+
+    public function moveImage(int $index, int $direction): void
+    {
+        $target = $index + $direction;
+        if (isset($this->images[$index], $this->images[$target])) {
+            [$this->images[$index], $this->images[$target]] = [$this->images[$target], $this->images[$index]];
+        }
     }
 
     public function save(PublishAnnouncement $publish)
@@ -212,7 +250,7 @@ class Compose extends Component
                 'publish_at' => $this->when === 'later' ? $publishAt : null,
                 'expires_at' => $this->expiry !== '' ? $publishAt->copy()->addDays((int) $this->expiry) : null,
                 'pinned' => $this->pinned,
-            ], $this->effectiveAudience());
+            ], $this->effectiveAudience(), $this->images);
         } catch (ValidationException $e) {
             $this->setErrorBag($e->validator->errors());
 

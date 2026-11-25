@@ -40,8 +40,9 @@ class Home extends Component
         return School::query()->publiclyListed()
             ->withCount(['offers as offers_count' => fn ($q) => $q->where('is_active', true)])
             ->withCount(['events as upcoming_count' => fn ($q) => $q->where('visibility', 'public')->where('status', '!=', 'cancelled')->upcoming()])
+            ->with('logoMedia')
             ->orderBy('name')
-            ->get(['id', 'name', 'short_name', 'slug', 'city', 'tagline', 'color', 'logo_path']);
+            ->get(['id', 'name', 'short_name', 'slug', 'city', 'tagline', 'color', 'logo_path', 'logo_media_id']);
     }
 
     #[Computed]
@@ -50,7 +51,7 @@ class Home extends Component
         $schoolId = $this->schools->firstWhere('slug', $this->school)?->id;
 
         return Event::query()->publiclyVisible()
-            ->with('school:id,name,short_name,slug,color')
+            ->with('school:id,name,short_name,slug,color,logo_media_id')
             ->when($schoolId, fn ($q) => $q->where('events.school_id', $schoolId))
             ->when(EventCategory::tryFrom($this->category), fn ($q, $c) => $q->where('events.category', $c->value))
             ->when($this->when === 'week', fn ($q) => $q->whereBetween('events.starts_at', [now()->startOfDay(), now()->endOfWeek()]))
@@ -65,7 +66,7 @@ class Home extends Component
     public function announcements()
     {
         return Announcement::query()->publiclyVisible()
-            ->with('school:id,name,short_name,slug,color')
+            ->with('school:id,name,short_name,slug,color,logo_media_id')
             ->latest('published_at')
             ->limit(6)
             ->get(['id', 'school_id', 'title', 'body', 'priority', 'published_at']);

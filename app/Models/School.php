@@ -8,9 +8,11 @@ use Database\Factories\SchoolFactory;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 /**
@@ -62,6 +64,20 @@ class School extends Model
     public function groups(): HasMany
     {
         return $this->hasMany(Group::class);
+    }
+
+    public function logoMedia(): BelongsTo
+    {
+        return $this->belongsTo(Media::class, 'logo_media_id');
+    }
+
+    public function logoUrl(): ?string
+    {
+        if ($this->logo_media_id) {
+            return $this->logoMedia?->url();
+        }
+
+        return $this->logo_path ? Storage::disk('public')->url($this->logo_path) : null;
     }
 
     public function offers(): HasMany

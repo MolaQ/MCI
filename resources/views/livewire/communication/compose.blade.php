@@ -12,6 +12,35 @@
 
                 <x-ui.editor property="body" :label="__('Treść')" :placeholder="__('Napisz komunikat… Wpisz @, aby wspomnieć osobę lub grupę.')" />
 
+                <div class="space-y-3">
+                    <div class="flex flex-wrap items-center justify-between gap-2">
+                        <flux:label>{{ __('Obrazy') }} <span class="font-normal text-zinc-400">({{ count($images) }}/{{ config('mci.media.max_post_images') }})</span></flux:label>
+                        @if (count($images) < config('mci.media.max_post_images'))
+                            <x-ui.image-editor model="newImage" gallery :presets="['free', '16:9', '4:3', '1:1']" :max-size="2000" :background="false" />
+                        @endif
+                    </div>
+                    @if ($images)
+                        <div class="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                            @foreach ($images as $i => $image)
+                                <div wire:key="img-{{ $i }}-{{ $image->getFilename() }}" class="group relative overflow-hidden rounded-mci border border-zinc-200 dark:border-zinc-700">
+                                    <img src="{{ $image->temporaryUrl() }}" alt="" class="aspect-video w-full object-cover" />
+                                    <div class="absolute inset-x-0 bottom-0 flex justify-end gap-1 bg-gradient-to-t from-black/60 p-1.5">
+                                        @if ($i > 0)
+                                            <button type="button" wire:click="moveImage({{ $i }}, -1)" class="rounded bg-white/90 p-1 text-zinc-700" title="{{ __('Wcześniej') }}"><flux:icon.chevron-left variant="micro" /></button>
+                                        @endif
+                                        @if ($i < count($images) - 1)
+                                            <button type="button" wire:click="moveImage({{ $i }}, 1)" class="rounded bg-white/90 p-1 text-zinc-700" title="{{ __('Później') }}"><flux:icon.chevron-right variant="micro" /></button>
+                                        @endif
+                                        <button type="button" wire:click="removeImage({{ $i }})" class="rounded bg-white/90 p-1 text-red-600" title="{{ __('Usuń') }}"><flux:icon.trash variant="micro" /></button>
+                                    </div>
+                                </div>
+                            @endforeach
+                        </div>
+                    @endif
+                    <flux:error name="newImage" />
+                    <flux:error name="images" />
+                </div>
+
                 <div class="space-y-2">
                     <flux:label>{{ __('Priorytet') }}</flux:label>
                     <div class="flex flex-wrap gap-2">
