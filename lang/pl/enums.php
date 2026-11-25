@@ -6,18 +6,6 @@ return [
         'active' => 'Aktywne',
         'suspended' => 'Zawieszone',
     ],
-    'group_type' => [
-        'staff' => 'Kadra',
-        'subject' => 'Przedmiotowa',
-        'vocational' => 'Zawodowa',
-        'class_tutors' => 'Wychowawcy',
-        'class' => 'Klasa',
-        'volunteering' => 'Wolontariat',
-        'sport' => 'Sport',
-        'club' => 'Koło / klub',
-        'association' => 'Stowarzyszenie',
-        'custom' => 'Inna',
-    ],
     'group_role' => [
         'member' => 'Członek',
         'leader' => 'Lider',
@@ -52,6 +40,7 @@ return [
         'users_manage' => 'Zarządzanie kontami',
         'roles_manage' => 'Nadawanie ról i uprawnień',
         'groups_manage' => 'Zarządzanie wszystkimi grupami',
+        'categories_manage' => 'Kategorie wydarzeń i typy grup szkoły',
         'invites_create' => 'Tworzenie zaproszeń / kodów QR',
         'announcements_publish_any' => 'Ogłoszenia do dowolnych odbiorców',
         'announcements_publish_own_groups' => 'Ogłoszenia do własnych grup',
@@ -84,17 +73,6 @@ return [
         'inter_school' => 'Widoczne dla zalogowanych osób ze wszystkich szkół portalu.',
         'school_only' => 'Widoczne tylko dla członków tej szkoły.',
         'private_group' => 'Tylko wybrane grupy i osoby.',
-    ],
-
-    'event_category' => [
-        'open_day' => 'Dzień otwarty',
-        'competition' => 'Konkurs / zawody',
-        'recruitment' => 'Rekrutacja',
-        'ceremony' => 'Uroczystość',
-        'sport' => 'Sport',
-        'charity' => 'Akcja charytatywna',
-        'meeting' => 'Spotkanie',
-        'other' => 'Inne',
     ],
 
     'offer_kind' => [

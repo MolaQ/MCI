@@ -244,7 +244,7 @@ erDiagram
 | parent_id | FK groups null | optional hierarchy (e.g. *Nauczyciele zawodowi* under *Nauczyciele*). Targeting a parent does **not** auto-include children unless `include_subgroups` is chosen on the target (§3.4). |
 | name | varchar(150) | |
 | slug | varchar(150) unique | |
-| type | varchar(30) | `staff`, `subject`, `vocational`, `class_tutors`, `class`, `volunteering`, `sport`, `custom` — index |
+| type_id | FK terms | editable group type (§3.8); defaults `staff`, `subject`, `vocational`, `class_tutors`, `class`, `volunteering`, `sport`, `club`, `association`, `custom` |
 | description | text null | |
 | color | varchar(7) null | UI chip colour |
 | is_system | bool | e.g. *Wszyscy pracownicy* — cannot be deleted |
@@ -413,6 +413,17 @@ Indexes: `(status, due_date)` for overdue scans, `(event_id, stage_id, position)
 - **`settings`** — key/value json for school-wide settings (school name, default reminder offsets, alert escalation defaults, quiet hours).
 - Laravel defaults: `jobs`, `job_batches`, `failed_jobs`, `cache`, `sessions`, `password_reset_tokens`.
 
+### 3.8 Editable dictionaries: event categories and group types
+
+Event categories and group types are data, not code (they replaced the `EventCategory` / `GroupType` enums).
+
+**`terms`** — `kind` (`event_category`, `group_type`; `App\Enums\TermKind`), `school_id` (null = the whole portal), `key` (stable slug), `name`, `icon` (one of `TermKind::ICONS`, monochrome Heroicons), `color` (group types only: default chip colour), `position`, `is_active` (archive), `is_featured` (event categories only: shown in the public "Wyróżnione" bento), `created_by`, timestamps. `events.category_id` and `groups.type_id` point here; the migration turned the old values into portal-wide terms with the same keys.
+
+- **Portal-wide entries** are managed by site admins in *Witryna → Kategorie i typy* (site journal).
+- **A school's own entries** are managed by `categories.manage` in *Szkoła → Kategorie i typy* (school log), only while the feature switch `events.custom_categories` / `groups.custom_types` is on for that school. The same switch lets the school **hide** portal-wide entries it does not use (`schools.settings.hidden_terms`), without affecting other schools.
+- Create, rename, change icon/colour, reorder (up/down within its own list), archive/restore, delete. Delete works only for unused entries; entries in use are archived, so history keeps its labels. The fallback entry (`other` / `custom`) can never be hidden, archived or deleted, so every picker has an option.
+- `App\Domain\Taxonomy\TermCatalog` decides what a school may use (`forSchool`, `allowedIds`); event and group forms validate against it, and an event/group keeps its current entry even after it is archived or hidden. Actions in `App\Domain\Taxonomy\Actions` authorize through `TermPolicy` and write `term.*` audit entries.
+
 ---
 
 ## 4. Permission & group model
@@ -452,6 +463,7 @@ Four layers, checked together in Laravel **Policies**:
 | `roles.manage` (grant roles / individual permissions) | ✓ | | | |
 | `audit.view` | ✓ | ✓ | | |
 | `settings.manage` (school policy: profile-visibility cap, self-registration, domains) | ✓ | | | |
+| `categories.manage` (the school's own event categories and group types, §3.8) | ✓ | ✓ | | |
 | `events.publish_public` | ✓ | ✓ | | |
 
 \* **Decision:** `alerts.send` is not part of any role except admin. It is granted **directly to individual users** (Spatie direct permissions) by someone with `roles.manage`, e.g. the safety officer or reception. The admin user form has an "Uprawnienia indywidualne" panel for this. Coordinators get only `alerts.send.drill` by default.
@@ -614,7 +626,7 @@ Adding a new option = add a default in `config('mci.appearance')`, a field on th
 
 ### 8.2 Feature switches (site and school level)
 
-Every module and option that a school might not want is a case of `App\Enums\Feature` (labels in `lang/pl/features.php`): communication (komunikaty, wzmianki, obrazy, potwierdzenia, planowanie, komunikaty publiczne), events (moduł, publiczne, okładki, iCal), public front (portal, oferta, tryb TV), groups and onboarding (samodzielne dołączanie, logo grup, zaproszenia, kody QR) and the image editor (usuwanie tła). New features add a case; nothing else is needed to make them switchable.
+Every module and option that a school might not want is a case of `App\Enums\Feature` (labels in `lang/pl/features.php`): communication (komunikaty, wzmianki, obrazy, potwierdzenia, planowanie, komunikaty publiczne), events (moduł, publiczne, okładki, iCal, własne kategorie), public front (portal, oferta, tryb TV), groups and onboarding (samodzielne dołączanie, logo grup, zaproszenia, kody QR, własne typy grup) and the image editor (usuwanie tła). New features add a case; nothing else is needed to make them switchable.
 
 - **Site level** (*Witryna → Funkcje*, site admins): per feature `on` (master switch — off means off in every school) and `override` (whether schools may change it). Stored in the `features` setting.
 - **School level** (*Administracja → Funkcje szkoły*, `settings.manage`): the school's own on/off, only where the site allows it; locked or site-disabled features are shown read-only with the reason. Stored in `schools.settings.features`.
@@ -688,6 +700,11 @@ Later / optional: students role, SMS gateway fallback, Google/Microsoft SSO, mob
 - **Settings → Powiadomienia i aplikacja** (`/ustawienia/powiadomienia`): this device's state (włączone / wyłączone / blocked by the browser with how-to / unsupported / iPhone needs Home Screen install with steps), enable/disable, install button (`beforeinstallprompt`), test push, per-kind preferences, list of my devices with remove.
 - Works without GMP/BCMath (`App\Support\Push::client()` silences the library's speed notice). Real-phone delivery could not be exercised in CI; the encryption path is verified against a local push endpoint.
 
+
+### What the categories + public front update delivered
+
+- **Editable event categories and group types** (§3.8): table `terms` (migration `2026_11_27_090000`), portal-wide and per-school entries, feature switches `events.custom_categories` and `groups.custom_types`, permission `categories.manage` (admin, coordinator), screens *Witryna → Kategorie i typy* and *Szkoła → Kategorie i typy* with icon picker, colour, "wyróżniaj", reorder, archive, hide-in-school and delete-if-unused, all audited.
+- **Public front as an information centre** (`/`): hero with identity, live summary (dziś / ten tydzień / szkoły / komunikaty) and quick actions (log in or dashboard, join with an invite code in a modal, TV mode); one row of pill filters (school and category drop-downs, time segment, clear), kept in the URL; a **featured bento** (next events from highlighted categories with cover, plus pinned or latest public announcements) that adapts to how many tiles it has; the event list (6 at a time, "Pokaż więcej"); the school directory with a **preview drawer** (contact, active offer, next public events) and a **school iCal feed** `/szkoly/{slug}/kalendarz.ics` (public, upcoming, `events.ics` switch). Category filters only offer categories with something coming up. Layout scales up on 1920 px+ screens for hallway TVs.
 ---
 
 ## 11. Operations: updates, backups, maintenance (shared-hosting safe)

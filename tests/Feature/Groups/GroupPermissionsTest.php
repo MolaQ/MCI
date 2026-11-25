@@ -33,7 +33,7 @@ it('lets coordinators create groups but not teachers', function () {
     $this->actingAs(userWithRole(Role::Coordinator));
     Livewire::test(Edit::class)
         ->set('name', 'Koło robotyki')
-        ->set('type', 'custom')
+        ->set('type_id', groupTypeId('custom'))
         ->set('color', '#ff0000')
         ->call('save')
         ->assertHasNoErrors();

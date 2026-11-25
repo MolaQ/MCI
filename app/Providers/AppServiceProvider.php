@@ -9,6 +9,7 @@ use App\Models\Event;
 use App\Models\Group;
 use App\Models\Invite;
 use App\Models\School;
+use App\Models\Term;
 use App\Models\User;
 use App\Support\Appearance;
 use App\Support\CurrentSchool;
@@ -49,6 +50,7 @@ class AppServiceProvider extends ServiceProvider
             'invite' => Invite::class,
             'announcement' => Announcement::class,
             'event' => Event::class,
+            'term' => Term::class,
         ]);
 
         // Site admins and school admins pass every *permission* check (dotted

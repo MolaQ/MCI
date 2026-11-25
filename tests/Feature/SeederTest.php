@@ -38,6 +38,7 @@ it('renders every main page for the administrator', function () {
         route('invites.index'), route('invites.create'),
         route('communication.index'), route('communication.create'), route('events.index'), route('events.create'),
         route('admin.school.profile'), route('home'), route('tv'), route('admin.school.features'), route('site.features'), route('settings.notifications'),
+        route('admin.terms'), route('site.terms'), route('admin.terms', ['lista' => 'group_type']), route('public.school.ics', $this->school->slug),
     ] as $url) {
         $this->actingAs($admin)->get($url)->assertOk();
     }

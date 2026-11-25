@@ -11,9 +11,9 @@
             <flux:textarea wire:model="description" :label="__('Opis')" rows="3" />
 
             <div class="grid gap-4 sm:grid-cols-2">
-                <flux:select wire:model="type" :label="__('Typ')" :disabled="! $canChangeStructure">
+                <flux:select wire:model="type_id" :label="__('Typ')" :disabled="! $canChangeStructure">
                     @foreach ($types as $t)
-                        <flux:select.option :value="$t->value">{{ $t->label() }}</flux:select.option>
+                        <flux:select.option :value="$t->id">{{ $t->label() }}</flux:select.option>
                     @endforeach
                 </flux:select>
 

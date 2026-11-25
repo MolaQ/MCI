@@ -3,7 +3,6 @@
 namespace App\Models;
 
 use App\Enums\ContentVisibility;
-use App\Enums\EventCategory;
 use App\Enums\Feature;
 use App\Support\Features;
 use Database\Factories\EventFactory;
@@ -18,7 +17,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * stages, tasks and members are added by the Project Manager step.
  *
  * @property ContentVisibility $visibility
- * @property EventCategory $category
+ * @property Term $category
  */
 class Event extends Model
 {
@@ -26,10 +25,13 @@ class Event extends Model
     use HasFactory, SoftDeletes;
 
     /** Fields that may ever leave the building (public pages, iCal, TV). */
-    public const PUBLIC_COLUMNS = ['id', 'school_id', 'title', 'public_description', 'category', 'starts_at', 'ends_at', 'all_day', 'location', 'visibility', 'status', 'cover_media_id'];
+    public const PUBLIC_COLUMNS = ['id', 'school_id', 'title', 'public_description', 'category_id', 'starts_at', 'ends_at', 'all_day', 'location', 'visibility', 'status', 'cover_media_id'];
+
+    /** Every list shows the category chip. */
+    protected $with = ['category'];
 
     protected $fillable = [
-        'school_id', 'owner_id', 'title', 'description', 'public_description', 'category',
+        'school_id', 'owner_id', 'title', 'description', 'public_description', 'category_id',
         'starts_at', 'ends_at', 'all_day', 'location', 'visibility', 'status',
     ];
 
@@ -37,7 +39,6 @@ class Event extends Model
     {
         return [
             'visibility' => ContentVisibility::class,
-            'category' => EventCategory::class,
             'starts_at' => 'datetime',
             'ends_at' => 'datetime',
             'all_day' => 'boolean',
@@ -47,6 +48,17 @@ class Event extends Model
     public function school(): BelongsTo
     {
         return $this->belongsTo(School::class);
+    }
+
+    /**
+     * Editable category (App\Models\Term). Only public-safe columns are
+     * loaded, so the relation can be used on public pages as well.
+     */
+    public function category(): BelongsTo
+    {
+        return $this->belongsTo(Term::class, 'category_id')
+            ->select(Term::PUBLIC_COLUMNS)
+            ->withDefault(fn (Term $term) => $term->forceFill(['name' => __('Inne'), 'icon' => 'calendar', 'kind' => 'event_category']));
     }
 
     public function cover(): BelongsTo

@@ -23,6 +23,16 @@ return [
         'member_removed' => 'Usunięto członka',
         'member_role_changed' => 'Zmieniono rolę w grupie',
     ],
+    'term' => [
+        'created' => 'Dodano kategorię / typ',
+        'updated' => 'Zmieniono kategorię / typ',
+        'reordered' => 'Zmieniono kolejność kategorii / typów',
+        'archived' => 'Zarchiwizowano kategorię / typ',
+        'restored' => 'Przywrócono kategorię / typ',
+        'deleted' => 'Usunięto kategorię / typ',
+        'hidden' => 'Ukryto ogólną kategorię / typ w szkole',
+        'shown' => 'Przywrócono ogólną kategorię / typ w szkole',
+    ],
     'school' => [
         'created' => 'Utworzono szkołę',
         'updated' => 'Zmieniono szkołę',

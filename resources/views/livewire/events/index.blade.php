@@ -21,7 +21,7 @@
         <div class="flex flex-wrap gap-2">
             <x-ui.pill wire:click="$set('category', '')" :active="$category === ''">{{ __('Każda kategoria') }}</x-ui.pill>
             @foreach ($categories as $c)
-                <x-ui.pill wire:click="$set('category', '{{ $c->value }}')" :active="$category === $c->value"><flux:icon :name="$c->icon()" variant="micro" /> {{ $c->label() }}</x-ui.pill>
+                <x-ui.pill wire:click="$set('category', '{{ $c->id }}')" :active="$category === (string) $c->id" wire:key="cat-{{ $c->id }}"><flux:icon :name="$c->icon()" variant="micro" /> {{ $c->label() }}</x-ui.pill>
             @endforeach
         </div>
     </div>

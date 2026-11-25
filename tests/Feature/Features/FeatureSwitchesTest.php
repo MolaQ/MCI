@@ -25,7 +25,7 @@ function features(): Features
 function publicEvent(School $school, string $title): Event
 {
     return Event::query()->create([
-        'school_id' => $school->id, 'title' => $title, 'category' => 'open_day',
+        'school_id' => $school->id, 'title' => $title, 'category_id' => categoryId('open_day'),
         'starts_at' => now()->addDays(3), 'visibility' => 'public',
     ]);
 }

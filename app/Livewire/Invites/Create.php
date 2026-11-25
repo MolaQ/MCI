@@ -63,7 +63,7 @@ class Create extends Component
     {
         $user = Auth::user();
 
-        return Group::query()->inCurrentSchool()->orderBy('type')->orderBy('name')->get()
+        return Group::query()->inCurrentSchool()->orderBy('type_id')->orderBy('name')->get()
             ->filter(fn (Group $g) => Gate::allows('invite', $g))
             ->values()
             ->each(fn (Group $g) => $g->setAttribute('can_lead', $user->can('manageLeaders', $g)));

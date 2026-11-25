@@ -12,6 +12,7 @@ enum Permission: string
     case UsersManage = 'users.manage';
     case RolesManage = 'roles.manage';
     case GroupsManage = 'groups.manage';
+    case CategoriesManage = 'categories.manage';
     case InvitesCreate = 'invites.create';
     case AnnouncementsPublishAny = 'announcements.publish.any';
     case AnnouncementsPublishOwnGroups = 'announcements.publish.own_groups';

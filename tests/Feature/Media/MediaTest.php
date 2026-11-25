@@ -131,7 +131,7 @@ it('publishes an event cover only together with a public event', function () {
     $this->actingAs(userWithRole(Role::Coordinator));
 
     Livewire::test(EventEdit::class)
-        ->set('title', 'Dzień Otwarty')->set('category', 'open_day')
+        ->set('title', 'Dzień Otwarty')->set('category_id', categoryId('open_day'))
         ->set('date', now()->addWeek()->format('Y-m-d'))->set('start_time', '10:00')
         ->set('visibility', 'school_only')
         ->set('coverUpload', UploadedFile::fake()->image('cover.jpg', 2400, 1350))

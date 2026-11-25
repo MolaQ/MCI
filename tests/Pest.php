@@ -1,7 +1,9 @@
 <?php
 
 use App\Enums\Role;
+use App\Enums\TermKind;
 use App\Models\School;
+use App\Models\Term;
 use App\Models\User;
 use App\Support\CurrentSchool;
 use Database\Seeders\RolesAndPermissionsSeeder;
@@ -53,6 +55,18 @@ function member(array $attributes = [], ?School $school = null): User
 function admin(): User
 {
     return userWithRole(Role::Admin);
+}
+
+/** Id of a portal-wide event category (seeded by the terms migration). */
+function categoryId(string $key): int
+{
+    return Term::idFor(TermKind::EventCategory, $key);
+}
+
+/** Id of a portal-wide group type (seeded by the terms migration). */
+function groupTypeId(string $key): int
+{
+    return Term::idFor(TermKind::GroupType, $key);
 }
 
 function siteAdmin(): User

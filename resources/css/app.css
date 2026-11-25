@@ -188,6 +188,14 @@
 .mci-fade-up {
     animation: mci-fade-up 240ms ease-out both;
 }
+/* Horizontal pill rows: scroll on phones without a visible scrollbar. */
+.mci-scroll-x {
+    scrollbar-width: none;
+}
+.mci-scroll-x::-webkit-scrollbar {
+    display: none;
+}
+
 @media (prefers-reduced-motion: reduce) {
     .mci-fade-up,
     .mci-mention-popup {

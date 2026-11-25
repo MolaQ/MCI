@@ -2,10 +2,12 @@
 
 namespace App\Livewire\Groups;
 
-use App\Enums\GroupType;
+use App\Domain\Taxonomy\TermCatalog;
 use App\Enums\MembershipMode;
 use App\Enums\Permission;
+use App\Enums\TermKind;
 use App\Models\Group;
+use App\Support\CurrentSchool;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Computed;
@@ -34,7 +36,7 @@ class Index extends Component
                 ->whereHas('members', fn ($m) => $m->whereKey($user->id))
                 ->orWhere('membership_mode', MembershipMode::Open->value)))
             ->search($this->search)
-            ->when($this->type !== '', fn ($q) => $q->where('type', $this->type))
+            ->when(ctype_digit($this->type), fn ($q) => $q->where('type_id', (int) $this->type))
             ->orderByDesc('is_system')
             ->orderBy('name')
             ->get();
@@ -48,6 +50,6 @@ class Index extends Component
 
     public function render()
     {
-        return view('livewire.groups.index', ['types' => GroupType::cases()]);
+        return view('livewire.groups.index', ['types' => app(TermCatalog::class)->forSchool(TermKind::GroupType, app(CurrentSchool::class)->get())]);
     }
 }

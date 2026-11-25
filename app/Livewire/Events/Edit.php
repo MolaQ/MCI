@@ -3,9 +3,10 @@
 namespace App\Livewire\Events;
 
 use App\Domain\Media\Actions\ReplaceImage;
+use App\Domain\Taxonomy\TermCatalog;
 use App\Enums\ContentVisibility;
-use App\Enums\EventCategory;
 use App\Enums\Feature;
+use App\Enums\TermKind;
 use App\Livewire\Concerns\WithImageUploads;
 use App\Models\Event;
 use App\Support\Audit;
@@ -32,7 +33,11 @@ class Edit extends Component
 
     public string $title = '';
 
-    public string $category = 'other';
+    public ?int $category_id = null;
+
+    /** Category the event had when the form opened (stays selectable even if archived). */
+    #[Locked]
+    public ?int $originalCategoryId = null;
 
     public string $date = '';
 
@@ -62,7 +67,7 @@ class Edit extends Component
             $this->title = $event->title;
             $this->location = (string) $event->location;
             $this->all_day = (bool) $event->all_day;
-            $this->category = $event->category->value;
+            $this->category_id = $this->originalCategoryId = $event->category_id;
             $this->visibility = $event->visibility->value;
             $this->description = (string) $event->description;
             $this->public_description = (string) $event->public_description;
@@ -74,6 +79,7 @@ class Edit extends Component
             $this->coverUrl = $event->cover?->url();
         } else {
             $this->authorize('create', Event::class);
+            $this->category_id = app(TermCatalog::class)->fallback(TermKind::EventCategory, app(CurrentSchool::class)->get())?->id;
             $this->date = now()->addWeek()->format('Y-m-d');
             $this->start_time = '10:00';
         }
@@ -83,7 +89,7 @@ class Edit extends Component
     {
         return [
             'title' => ['required', 'string', 'max:200'],
-            'category' => ['required', Rule::enum(EventCategory::class)],
+            'category_id' => ['required', 'integer', Rule::in($this->categoryIds())],
             'date' => ['required', 'date_format:Y-m-d'],
             'start_time' => [$this->all_day ? 'nullable' : 'required', 'nullable', 'date_format:H:i'],
             'end_date' => ['nullable', 'date_format:Y-m-d', 'after_or_equal:date'],
@@ -98,7 +104,7 @@ class Edit extends Component
 
     protected function validationAttributes(): array
     {
-        return ['title' => __('nazwa'), 'date' => __('data'), 'start_time' => __('godzina rozpoczęcia'), 'end_date' => __('data zakończenia')];
+        return ['category_id' => __('kategoria'), 'title' => __('nazwa'), 'date' => __('data'), 'start_time' => __('godzina rozpoczęcia'), 'end_date' => __('data zakończenia')];
     }
 
     public function save()
@@ -137,7 +143,7 @@ class Edit extends Component
 
         $data = [
             'title' => trim($this->title),
-            'category' => $this->category,
+            'category_id' => $this->category_id,
             'starts_at' => $startsAt,
             'ends_at' => $endsAt,
             'all_day' => $this->all_day,
@@ -164,6 +170,18 @@ class Edit extends Component
         Flux::toast(variant: 'success', text: __('Zapisano wydarzenie.'));
 
         return $this->redirectRoute('events.show', $event, navigate: true);
+    }
+
+    /**
+     * Categories this school may use, plus the event's current one.
+     *
+     * @return list<int>
+     */
+    private function categoryIds(): array
+    {
+        $ids = app(TermCatalog::class)->allowedIds(TermKind::EventCategory, app(CurrentSchool::class)->get());
+
+        return $this->originalCategoryId ? [...$ids, $this->originalCategoryId] : $ids;
     }
 
     public function updatedCoverUpload(): void
@@ -194,7 +212,7 @@ class Edit extends Component
     public function render()
     {
         return view('livewire.events.edit', [
-            'categories' => EventCategory::cases(),
+            'categories' => app(TermCatalog::class)->forSchool(TermKind::EventCategory, app(CurrentSchool::class)->get(), $this->originalCategoryId),
             'visibilities' => array_values(array_filter(ContentVisibility::selectable(),
                 fn ($v) => $v !== ContentVisibility::Public || app(Features::class)->enabled(Feature::PublicEvents) || $this->visibility === 'public')),
             'canPublishPublic' => Auth::user()->can('publishPublic', Event::class),

@@ -43,7 +43,7 @@
             @endif
         </flux:sidebar.nav>
 
-        @if ($school && ($user->can('users.manage') || $user->can('settings.manage') || $user->can('audit.view')))
+        @if ($school && ($user->can('users.manage') || $user->can('settings.manage') || $user->can('categories.manage') || $user->can('audit.view')))
             <flux:sidebar.nav>
                 <flux:sidebar.group :heading="__('Szkoła :name', ['name' => $school->short_name])" class="grid">
                     @can('users.manage')
@@ -60,6 +60,11 @@
                         </flux:sidebar.item>
                         <flux:sidebar.item icon="adjustments-horizontal" :href="route('admin.school.features')" :current="request()->routeIs('admin.school.features')" wire:navigate>
                             {{ __('Funkcje szkoły') }}
+                        </flux:sidebar.item>
+                    @endcan
+                    @can('categories.manage')
+                        <flux:sidebar.item icon="tag" :href="route('admin.terms')" :current="request()->routeIs('admin.terms')" wire:navigate>
+                            {{ __('Kategorie i typy') }}
                         </flux:sidebar.item>
                     @endcan
                     @can('audit.view')
@@ -82,6 +87,9 @@
                     </flux:sidebar.item>
                     <flux:sidebar.item icon="adjustments-horizontal" :href="route('site.features')" :current="request()->routeIs('site.features')" wire:navigate>
                         {{ __('Funkcje') }}
+                    </flux:sidebar.item>
+                    <flux:sidebar.item icon="tag" :href="route('site.terms')" :current="request()->routeIs('site.terms')" wire:navigate>
+                        {{ __('Kategorie i typy') }}
                     </flux:sidebar.item>
                     <flux:sidebar.item icon="book-open" :href="route('site.journal')" :current="request()->routeIs('site.journal')" wire:navigate>
                         {{ __('Dziennik witryny') }}

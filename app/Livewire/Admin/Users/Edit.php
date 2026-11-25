@@ -75,7 +75,7 @@ class Edit extends Component
     #[Computed]
     public function groups()
     {
-        return Group::query()->inCurrentSchool()->search($this->groupFilter)->orderBy('type')->orderBy('name')->get();
+        return Group::query()->inCurrentSchool()->search($this->groupFilter)->orderBy('type_id')->orderBy('name')->get();
     }
 
     protected function rules(): array

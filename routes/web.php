@@ -21,6 +21,7 @@ use App\Livewire\Publicly;
 use App\Livewire\Settings;
 use App\Livewire\Settings\Profile;
 use App\Livewire\Site;
+use App\Livewire\Taxonomy;
 use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
 use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
 use Illuminate\Support\Facades\Route;
@@ -67,6 +68,7 @@ Route::middleware('throttle:240,1')->group(function () {
     Route::livewire('/', Publicly\Home::class)->name('home');
     Route::livewire('/szkoly/{slug}', Publicly\SchoolPage::class)->name('public.school');
     Route::get('/publiczne/wydarzenia/{event}', [PublicContentController::class, 'event'])->whereNumber('event')->name('public.event');
+    Route::get('/szkoly/{slug}/kalendarz.ics', [PublicContentController::class, 'schoolIcs'])->middleware('feature:events.ics')->name('public.school.ics');
     Route::get('/publiczne/wydarzenia/{event}.ics', [PublicContentController::class, 'ics'])->whereNumber('event')->middleware('feature:events.ics')->name('public.event.ics');
     Route::get('/publiczne/komunikaty/{announcement}', [PublicContentController::class, 'announcement'])->whereNumber('announcement')->name('public.announcement');
     Route::livewire('/tv', Publicly\Board::class)->middleware('feature:public.tv')->name('tv');
@@ -115,6 +117,7 @@ Route::middleware('auth')->group(function () {
         Route::livewire('/szkola', Site\SchoolEdit::class)->name('school');
         Route::livewire('/szkola/profil-publiczny', Admin\SchoolProfile::class)->name('school.profile');
         Route::livewire('/szkola/funkcje', Admin\SchoolFeatures::class)->name('school.features');
+        Route::livewire('/szkola/kategorie', Taxonomy\Manage::class)->name('terms');
         Route::livewire('/logi', AuditLog::class)->name('audit');
     });
 
@@ -124,6 +127,7 @@ Route::middleware('auth')->group(function () {
         Route::livewire('/szkoly/{school}', Site\SchoolEdit::class)->name('schools.edit');
         Route::livewire('/wyglad', Appearance::class)->name('appearance');
         Route::livewire('/funkcje', Site\Features::class)->name('features');
+        Route::livewire('/kategorie', Taxonomy\Manage::class)->defaults('scope', 'site')->name('terms');
         Route::livewire('/dziennik', AuditLog::class)->defaults('scope', 'site')->name('journal');
     });
 });

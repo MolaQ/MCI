@@ -3,7 +3,6 @@
 namespace App\Models;
 
 use App\Enums\GroupRole;
-use App\Enums\GroupType;
 use App\Enums\MembershipMode;
 use App\Support\Appearance;
 use App\Support\CurrentSchool;
@@ -21,7 +20,7 @@ use Illuminate\Support\Str;
  * @property int $id
  * @property string $name
  * @property string $slug
- * @property GroupType $type
+ * @property Term $type
  * @property MembershipMode $membership_mode
  * @property bool $is_system
  */
@@ -30,12 +29,15 @@ class Group extends Model
     /** @use HasFactory<GroupFactory> */
     use HasFactory, SoftDeletes;
 
+    /** Chips and lists show the type (name, colour). */
+    protected $with = ['type'];
+
     protected $fillable = [
         'school_id',
         'parent_id',
         'name',
         'slug',
-        'type',
+        'type_id',
         'description',
         'color',
         'is_system',
@@ -46,7 +48,6 @@ class Group extends Model
     protected function casts(): array
     {
         return [
-            'type' => GroupType::class,
             'membership_mode' => MembershipMode::class,
             'is_system' => 'boolean',
         ];
@@ -90,6 +91,13 @@ class Group extends Model
     public function school(): BelongsTo
     {
         return $this->belongsTo(School::class);
+    }
+
+    /** Editable group type (App\Models\Term). */
+    public function type(): BelongsTo
+    {
+        return $this->belongsTo(Term::class, 'type_id')
+            ->withDefault(fn (Term $term) => $term->forceFill(['name' => __('Inna'), 'icon' => 'tag', 'kind' => 'group_type']));
     }
 
     public function scopeInCurrentSchool(Builder $query): void

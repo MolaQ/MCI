@@ -26,6 +26,7 @@ enum Feature: string
     case PublicEvents = 'events.public';
     case EventCovers = 'events.covers';
     case EventIcs = 'events.ics';
+    case EventCategoriesCustom = 'events.custom_categories';
 
     // Public front and screens
     case PublicFront = 'public.front';
@@ -37,6 +38,7 @@ enum Feature: string
     case GroupLogos = 'groups.logos';
     case Invites = 'invites';
     case InviteQr = 'invites.qr';
+    case GroupTypesCustom = 'groups.custom_types';
 
     // Image editor
     case BackgroundRemoval = 'media.background_removal';
@@ -62,9 +64,9 @@ enum Feature: string
         return match ($this) {
             self::Announcements, self::Mentions, self::AnnouncementImages, self::AnnouncementConfirmation,
             self::AnnouncementScheduling, self::PublicAnnouncements, self::WebPush => 'communication',
-            self::Events, self::PublicEvents, self::EventCovers, self::EventIcs => 'events',
+            self::Events, self::PublicEvents, self::EventCovers, self::EventIcs, self::EventCategoriesCustom => 'events',
             self::PublicFront, self::PublicOffers, self::TvMode => 'public',
-            self::GroupSelfJoin, self::GroupLogos, self::Invites, self::InviteQr => 'groups',
+            self::GroupSelfJoin, self::GroupLogos, self::Invites, self::InviteQr, self::GroupTypesCustom => 'groups',
             self::BackgroundRemoval => 'media',
         };
     }
@@ -75,7 +77,7 @@ enum Feature: string
         return match ($this) {
             self::Mentions, self::AnnouncementImages, self::AnnouncementConfirmation,
             self::AnnouncementScheduling, self::PublicAnnouncements => self::Announcements,
-            self::PublicEvents, self::EventCovers, self::EventIcs => self::Events,
+            self::PublicEvents, self::EventCovers, self::EventIcs, self::EventCategoriesCustom => self::Events,
             self::PublicOffers => self::PublicFront,
             self::InviteQr => self::Invites,
             default => null,

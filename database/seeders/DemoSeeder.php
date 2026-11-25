@@ -4,12 +4,13 @@ namespace Database\Seeders;
 
 use App\Domain\Communication\Actions\PublishAnnouncement;
 use App\Enums\GroupRole;
-use App\Enums\GroupType;
 use App\Enums\Role;
+use App\Enums\TermKind;
 use App\Models\Announcement;
 use App\Models\Event;
 use App\Models\Group;
 use App\Models\School;
+use App\Models\Term;
 use App\Models\User;
 use App\Support\CurrentSchool;
 use Illuminate\Database\Seeder;
@@ -37,7 +38,7 @@ class DemoSeeder extends Seeder
         $subjects = ['Matematyka', 'Język polski', 'Języki obce', 'Mechatronika', 'Mechanika i budowa maszyn', 'Informatyka', 'Wychowanie fizyczne'];
         $subjectGroups = collect($subjects)->map(fn ($name) => Group::query()->firstOrCreate(
             ['school_id' => $school->id, 'slug' => Str::slug($name)],
-            ['name' => $name, 'type' => in_array($name, ['Mechatronika', 'Mechanika i budowa maszyn'], true) ? GroupType::Vocational : GroupType::Subject],
+            ['name' => $name, 'type_id' => Term::idFor(TermKind::GroupType, in_array($name, ['Mechatronika', 'Mechanika i budowa maszyn'], true) ? 'vocational' : 'subject')],
         ));
 
         $group = fn (string $slug) => Group::query()->where('school_id', $school->id)->where('slug', $slug)->first();
@@ -151,7 +152,7 @@ class DemoSeeder extends Seeder
             [$school, 'Zbiórka dla schroniska', 'charity', 0, '08:00', 'Hol', 'public', 'Zbieramy karmę i koce — cały dzień, hol główny.'],
         ] as [$s, $title, $category, $days, $time, $location, $visibility, $public]) {
             Event::query()->firstOrCreate(['school_id' => $s->id, 'title' => $title], [
-                'owner_id' => $owner?->id, 'category' => $category,
+                'owner_id' => $owner?->id, 'category_id' => Term::idFor(TermKind::EventCategory, $category),
                 'starts_at' => now()->addDays($days)->setTimeFromTimeString($time),
                 'ends_at' => now()->addDays($days)->setTimeFromTimeString($time)->addHours(3),
                 'location' => $location, 'visibility' => $visibility, 'public_description' => $public,

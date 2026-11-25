@@ -15,7 +15,7 @@ function makeEvent(array $attributes = []): Event
     return Event::query()->create($attributes + [
         'school_id' => test()->school->id,
         'title' => 'Wydarzenie',
-        'category' => 'open_day',
+        'category_id' => categoryId('open_day'),
         'starts_at' => now()->addDays(3)->setTime(10, 0),
         'visibility' => 'public',
         'description' => 'Notatka wewnętrzna dla kadry',
@@ -49,11 +49,11 @@ it('shows only public events of listed schools to guests, without internal field
 
 it('filters the public front with pills in the URL', function () {
     $other = School::factory()->create(['short_name' => 'ZS2', 'slug' => 'zs2']);
-    makeEvent(['title' => 'Turniej siatkówki', 'school_id' => $other->id, 'category' => 'sport']);
-    makeEvent(['title' => 'Konkurs CAD', 'category' => 'competition']);
+    makeEvent(['title' => 'Turniej siatkówki', 'school_id' => $other->id, 'category_id' => categoryId('sport')]);
+    makeEvent(['title' => 'Konkurs CAD', 'category_id' => categoryId('competition')]);
 
     $this->get(route('home', ['szkola' => 'zs2']))->assertSee('Turniej siatkówki')->assertDontSee('Konkurs CAD');
-    $this->get(route('home', ['kategoria' => 'competition']))->assertSee('Konkurs CAD')->assertDontSee('Turniej siatkówki');
+    $this->get(route('home', ['kategoria' => categoryId('competition')]))->assertSee('Konkurs CAD')->assertDontSee('Turniej siatkówki');
 });
 
 it('exports a public event as iCal with an exclusive all-day end', function () {
@@ -87,7 +87,7 @@ it('needs the public-publishing permission to make an event public', function ()
     $this->actingAs($teacher);
 
     Livewire::test(EventEdit::class)
-        ->set('title', 'Wycieczka')->set('category', 'other')
+        ->set('title', 'Wycieczka')->set('category_id', categoryId('other'))
         ->set('date', now()->addDay()->format('Y-m-d'))->set('start_time', '10:00')
         ->set('visibility', 'public')
         ->call('save')->assertHasErrors('visibility');
@@ -95,7 +95,7 @@ it('needs the public-publishing permission to make an event public', function ()
     expect(Event::query()->where('title', 'Wycieczka')->exists())->toBeFalse();
 
     Livewire::test(EventEdit::class)
-        ->set('title', 'Wycieczka')->set('category', 'other')
+        ->set('title', 'Wycieczka')->set('category_id', categoryId('other'))
         ->set('date', now()->addDay()->format('Y-m-d'))->set('start_time', '10:00')
         ->set('visibility', 'school_only')
         ->call('save')->assertHasNoErrors();

@@ -20,6 +20,7 @@ return [
         'events_public' => ['label' => 'Wydarzenia publiczne', 'description' => 'Pokazywanie wydarzeń na portalu publicznym.'],
         'events_covers' => ['label' => 'Obrazy wydarzeń', 'description' => 'Okładka wydarzenia (także na portalu, jeśli wydarzenie jest publiczne).'],
         'events_ics' => ['label' => 'Pobieranie do kalendarza (iCal)', 'description' => 'Przycisk „Dodaj do kalendarza” przy publicznych wydarzeniach.'],
+        'events_custom_categories' => ['label' => 'Własne kategorie wydarzeń', 'description' => 'Szkoła dodaje własne kategorie i ukrywa ogólne, których nie używa.'],
         'public_front' => ['label' => 'Portal publiczny', 'description' => 'Strona szkoły bez logowania. Wyłączenie ukrywa szkołę i jej treści publiczne.'],
         'public_offers' => ['label' => 'Oferta edukacyjna', 'description' => 'Kierunki i formy kształcenia na portalu.'],
         'public_tv' => ['label' => 'Tryb TV', 'description' => 'Tablica pełnoekranowa dla telewizorów na korytarzu.'],
@@ -27,6 +28,7 @@ return [
         'groups_logos' => ['label' => 'Logo grup', 'description' => 'Własne logo grupy, koła, klubu lub stowarzyszenia.'],
         'invites' => ['label' => 'Zaproszenia', 'description' => 'Linki zapraszające do szkoły i grup.'],
         'invites_qr' => ['label' => 'Kody QR i plakaty', 'description' => 'Kod QR i plakat do druku dla zaproszeń.'],
+        'groups_custom_types' => ['label' => 'Własne typy grup', 'description' => 'Szkoła dodaje własne typy grup i ukrywa ogólne, których nie używa.'],
         'media_background_removal' => ['label' => 'Usuwanie tła', 'description' => 'Narzędzie usuwania tła w edytorze logo.'],
     ],
 ];

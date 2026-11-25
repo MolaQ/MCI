@@ -28,6 +28,7 @@ enum Role: string
             self::Admin => Permission::cases(),
             self::Coordinator => [
                 Permission::GroupsManage,
+                Permission::CategoriesManage,
                 Permission::InvitesCreate,
                 Permission::AnnouncementsPublishAny,
                 Permission::AnnouncementsPublishOwnGroups,

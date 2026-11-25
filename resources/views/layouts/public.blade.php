@@ -1,12 +1,12 @@
 <!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" class="h-full scroll-smooth">
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" class="h-full scroll-smooth min-[1920px]:text-[18px] min-[2560px]:text-[22px]">
 <head>
     @include('partials.head')
     <meta name="description" content="{{ __('Szkoły, oferta edukacyjna i publiczne wydarzenia w jednym miejscu.') }}" />
 </head>
 <body class="flex min-h-screen flex-col bg-zinc-50 antialiased dark:bg-zinc-900">
     <header class="sticky top-0 z-30 border-b border-zinc-200/80 bg-white/85 backdrop-blur dark:border-zinc-700/80 dark:bg-zinc-900/85">
-        <div class="mx-auto flex max-w-6xl items-center gap-3 px-4 py-3">
+        <div class="mx-auto flex w-full max-w-7xl 2xl:max-w-[100rem] items-center gap-3 px-4 py-3 sm:px-6">
             <a href="{{ route('home') }}" class="flex min-w-0 items-center gap-2">
                 @if ($appearance->logoUrl())
                     <img src="{{ $appearance->logoUrl() }}" alt="" class="h-8 w-auto" />
@@ -17,9 +17,9 @@
             </a>
 
             <nav class="ms-auto hidden items-center gap-1 text-sm md:flex" aria-label="{{ __('Sekcje') }}">
-                <a href="{{ route('home') }}#wydarzenia" class="rounded-mci px-3 py-1.5 text-zinc-600 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-800">{{ __('Wydarzenia') }}</a>
-                <a href="{{ route('home') }}#szkoly" class="rounded-mci px-3 py-1.5 text-zinc-600 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-800">{{ __('Szkoły') }}</a>
-                <a href="{{ route('home') }}#komunikaty" class="rounded-mci px-3 py-1.5 text-zinc-600 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-800">{{ __('Komunikaty') }}</a>
+                <a href="{{ route('home') }}#wyroznione" class="rounded-mci px-3 py-1.5 text-zinc-600 transition-colors hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-white">{{ __('Wyróżnione') }}</a>
+                <a href="{{ route('home') }}#wydarzenia" class="rounded-mci px-3 py-1.5 text-zinc-600 transition-colors hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-white">{{ __('Wydarzenia') }}</a>
+                <a href="{{ route('home') }}#szkoly" class="rounded-mci px-3 py-1.5 text-zinc-600 transition-colors hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-white">{{ __('Szkoły') }}</a>
             </nav>
 
             <div class="ms-auto flex items-center gap-2 md:ms-2">
@@ -35,7 +35,7 @@
         </div>
         @auth
             <div class="border-t border-amber-200 bg-amber-50 text-amber-900 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-200">
-                <div class="mx-auto flex max-w-6xl items-center gap-2 px-4 py-1.5 text-xs">
+                <div class="mx-auto flex w-full max-w-7xl 2xl:max-w-[100rem] items-center gap-2 px-4 py-1.5 sm:px-6 text-xs">
                     <flux:icon name="eye" variant="micro" />
                     {{ __('Podgląd publiczny: tak tę stronę widzą goście. Nie ma tu żadnych danych wewnętrznych.') }}
                 </div>
@@ -48,7 +48,7 @@
     </main>
 
     <footer class="border-t border-zinc-200 bg-white dark:border-zinc-700 dark:bg-zinc-900">
-        <div class="mx-auto flex max-w-6xl flex-col gap-2 px-4 py-6 text-sm text-zinc-500 sm:flex-row sm:items-center sm:justify-between">
+        <div class="mx-auto flex w-full max-w-7xl 2xl:max-w-[100rem] flex-col gap-2 px-4 py-6 sm:px-6 text-sm text-zinc-500 sm:flex-row sm:items-center sm:justify-between">
             <span>© {{ now()->year }} {{ $appearance->schoolName() }}</span>
             <span class="flex flex-wrap gap-4">
                 <a href="{{ route('login') }}" class="hover:text-zinc-800 dark:hover:text-zinc-200">{{ __('Logowanie dla pracowników') }}</a>
