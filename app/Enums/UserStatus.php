@@ -24,6 +24,7 @@ enum UserStatus: string
 
     public function canLogIn(): bool
     {
-        return $this !== self::Suspended;
+        // Invited accounts must first set a password / confirm their e-mail.
+        return $this === self::Active;
     }
 }

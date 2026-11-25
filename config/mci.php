@@ -35,6 +35,31 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | First school (used by the database seeder on a fresh install)
+    |--------------------------------------------------------------------------
+    */
+
+    'school' => [
+        'name' => env('MCI_SCHOOL_NAME', 'Zespół Szkół Mechanicznych'),
+        'short_name' => env('MCI_SCHOOL_SHORT_NAME', 'ZSM'),
+        'slug' => env('MCI_SCHOOL_SLUG'),
+        'email_domains' => env('MCI_SCHOOL_EMAIL_DOMAINS'),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Invites (Step 2)
+    |--------------------------------------------------------------------------
+    */
+
+    'invites' => [
+        'default_days' => (int) env('MCI_INVITE_DEFAULT_DAYS', 14),
+        'max_days' => (int) env('MCI_INVITE_MAX_DAYS', 365),
+        'verification_hours' => (int) env('MCI_SIGNUP_VERIFICATION_HOURS', 48),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | First administrator (used by the database seeder)
     |--------------------------------------------------------------------------
     */

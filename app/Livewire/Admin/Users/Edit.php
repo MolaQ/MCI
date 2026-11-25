@@ -3,6 +3,7 @@
 namespace App\Livewire\Admin\Users;
 
 use App\Domain\Groups\MembershipGuard;
+use App\Domain\Schools\Actions\ManageSchoolMembership;
 use App\Domain\Users\Actions\SaveUser;
 use App\Domain\Users\Actions\SendAccountSetupLink;
 use App\Enums\GroupRole;
@@ -12,6 +13,7 @@ use App\Enums\UserStatus;
 use App\Models\Group;
 use App\Models\User;
 use App\Support\Audit;
+use App\Support\CurrentSchool;
 use Flux\Flux;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rule;
@@ -55,7 +57,7 @@ class Edit extends Component
             $this->status = $user->status->value;
             $this->roles = $user->getRoleNames()->all();
             $this->permissions = $user->getDirectPermissions()->pluck('name')->all();
-            $this->memberships = $user->groups->mapWithKeys(fn ($g) => [$g->id => $g->pivot->role->value])->all();
+            $this->memberships = $user->schoolGroups()->get()->mapWithKeys(fn ($g) => [$g->id => $g->pivot->role->value])->all();
             $this->sendSetupLink = false;
         } else {
             $this->authorize('create', User::class);
@@ -73,7 +75,7 @@ class Edit extends Component
     #[Computed]
     public function groups()
     {
-        return Group::query()->search($this->groupFilter)->orderBy('type')->orderBy('name')->get();
+        return Group::query()->inCurrentSchool()->search($this->groupFilter)->orderBy('type')->orderBy('name')->get();
     }
 
     protected function rules(): array
@@ -109,7 +111,10 @@ class Edit extends Component
         $this->email = mb_strtolower(trim($this->email));
         $data = $this->validate();
 
-        if ($this->user?->is(Auth::user()) && $this->status === UserStatus::Suspended->value) {
+        if (! Auth::user()->is_site_admin) {
+            // Account-level status affects every school; only site admins change it.
+            unset($data['status']);
+        } elseif ($this->user?->is(Auth::user()) && $this->status === UserStatus::Suspended->value) {
             $this->addError('status', __('Nie możesz zawiesić własnego konta.'));
 
             return null;
@@ -143,12 +148,31 @@ class Edit extends Component
         return $this->redirectRoute('admin.users.edit', $user, navigate: true);
     }
 
-    public function delete()
+    /**
+     * Removes the person from the active school (groups, roles, permissions).
+     * The account itself and other schools stay untouched.
+     */
+    public function removeFromSchool(ManageSchoolMembership $membership)
     {
         $this->authorize('delete', $this->user);
 
-        Audit::log('user.deleted', $this->user, ['email' => $this->user->email]);
+        $membership->remove($this->user, app(CurrentSchool::class)->required());
+        Flux::toast(text: __('Usunięto osobę ze szkoły.'));
+
+        return $this->redirectRoute('admin.users.index', navigate: true);
+    }
+
+    /**
+     * Deletes the whole account (all schools). Site admins only.
+     */
+    public function deleteAccount()
+    {
+        $this->authorize('deleteAccount', $this->user);
+
+        Audit::site('user.deleted', $this->user, ['email' => $this->user->email]);
         $this->user->groups()->detach();
+        $this->user->schools()->detach();
+        $this->user->update(['status' => UserStatus::Suspended]);
         $this->user->delete();
 
         Flux::toast(text: __('Usunięto konto.'));

@@ -39,6 +39,8 @@ class Appearance extends Component
 
     public function mount(AppearanceService $appearance): void
     {
+        $this->authorize('site-admin');
+
         $this->fill(collect($appearance->all())->only([
             'school_name', 'short_name', 'primary_color', 'primary_foreground', 'danger_color', 'radius', 'default_theme', 'logo_path',
         ])->all());
@@ -62,6 +64,7 @@ class Appearance extends Component
 
     public function save(Settings $settings)
     {
+        $this->authorize('site-admin');
         $data = $this->validate();
 
         if ($this->logo) {
@@ -75,12 +78,12 @@ class Appearance extends Component
         $data['logo_path'] = $this->logo_path;
 
         $settings->set('appearance', $data);
-        Audit::log('settings.appearance_updated', null, ['keys' => array_keys($data)]);
+        Audit::site('settings.appearance_updated', null, ['keys' => array_keys($data)]);
 
         Flux::toast(variant: 'success', text: __('Zapisano wygląd.'));
 
         // Full reload so the new CSS variables are applied in <head>.
-        return $this->redirectRoute('admin.appearance');
+        return $this->redirectRoute('site.appearance');
     }
 
     public function removeLogo(Settings $settings): void
@@ -95,9 +98,9 @@ class Appearance extends Component
     public function resetDefaults(Settings $settings)
     {
         $settings->set('appearance', ['logo_path' => $this->logo_path]);
-        Audit::log('settings.appearance_reset');
+        Audit::site('settings.appearance_reset');
 
-        return $this->redirectRoute('admin.appearance');
+        return $this->redirectRoute('site.appearance');
     }
 
     public function render()

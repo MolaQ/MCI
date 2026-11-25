@@ -89,7 +89,12 @@
                     @endif
                 </div>
 
-                <flux:text size="sm">{{ __('Kody QR i linki zaproszeń do grup pojawią się w kolejnym kroku (Zaproszenia).') }}</flux:text>
+                @can('invite', $group)
+                    <flux:separator />
+                    <flux:button size="sm" icon="qr-code" class="w-full" :href="route('invites.create', ['grupa' => $group->id])" wire:navigate>
+                        {{ __('Utwórz link / kod QR do tej grupy') }}
+                    </flux:button>
+                @endcan
             </flux:card>
         @endcan
     </div>

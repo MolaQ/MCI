@@ -10,10 +10,10 @@ use Spatie\Permission\Models\Role as RoleModel;
 use Spatie\Permission\PermissionRegistrar;
 
 /**
- * Idempotent: safe to run on every deploy. Creates missing permissions and
- * roles. Role → permission defaults are only applied to roles created now,
- * so changes made later by an admin are preserved (pass --force-defaults
- * via RolesAndPermissionsSeeder::$resetDefaults to override).
+ * Idempotent: safe to run on every deploy. Roles are global definitions
+ * (school_id = null) that are *assigned* per school. Role → permission
+ * defaults are only applied to roles created now (admin is always kept
+ * complete), so later changes made in the app are preserved.
  */
 class RolesAndPermissionsSeeder extends Seeder
 {
@@ -21,22 +21,26 @@ class RolesAndPermissionsSeeder extends Seeder
 
     public function run(): void
     {
-        app(PermissionRegistrar::class)->forgetCachedPermissions();
+        $registrar = app(PermissionRegistrar::class);
+        $previousTeam = $registrar->getPermissionsTeamId();
+        $registrar->setPermissionsTeamId(null);
+        $registrar->forgetCachedPermissions();
 
         foreach (Permission::cases() as $permission) {
             PermissionModel::findOrCreate($permission->value, 'web');
         }
 
         foreach (Role::cases() as $role) {
-            $model = RoleModel::query()->where(['name' => $role->value, 'guard_name' => 'web'])->first();
+            $model = RoleModel::query()->where(['name' => $role->value, 'guard_name' => 'web'])->whereNull('school_id')->first();
             $isNew = $model === null;
-            $model ??= RoleModel::create(['name' => $role->value, 'guard_name' => 'web']);
+            $model ??= RoleModel::query()->create(['name' => $role->value, 'guard_name' => 'web', 'school_id' => null]);
 
             if ($isNew || static::$resetDefaults || $role === Role::Admin) {
                 $model->syncPermissions(array_map(fn (Permission $p) => $p->value, $role->defaultPermissions()));
             }
         }
 
-        app(PermissionRegistrar::class)->forgetCachedPermissions();
+        $registrar->forgetCachedPermissions();
+        $registrar->setPermissionsTeamId($previousTeam);
     }
 }

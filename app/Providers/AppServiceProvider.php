@@ -4,12 +4,18 @@ namespace App\Providers;
 
 use App\Enums\Role;
 use App\Models\Group;
+use App\Models\Invite;
+use App\Models\School;
 use App\Models\User;
 use App\Support\Appearance;
+use App\Support\CurrentSchool;
 use App\Support\Settings;
+use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\Relation;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
@@ -20,6 +26,7 @@ class AppServiceProvider extends ServiceProvider
     {
         $this->app->singleton(Settings::class);
         $this->app->singleton(Appearance::class);
+        $this->app->scoped(CurrentSchool::class);
     }
 
     public function boot(): void
@@ -29,13 +36,29 @@ class AppServiceProvider extends ServiceProvider
         Relation::enforceMorphMap([
             'user' => User::class,
             'group' => Group::class,
+            'school' => School::class,
+            'invite' => Invite::class,
         ]);
 
-        // Administrators pass every permission check (policies still apply
-        // structural rules such as "no self-suspension" through `before` = null).
+        // Site admins and school admins pass every *permission* check (dotted
+        // names). Policy abilities (update, suspend…) still run, so structural
+        // rules such as "no self-suspension" keep applying to them.
         Gate::before(function (User $user, string $ability) {
-            return str_contains($ability, '.') && $user->hasRole(Role::Admin->value) ? true : null;
+            if (! str_contains($ability, '.')) {
+                return null;
+            }
+
+            return $user->is_site_admin || $user->hasRole(Role::Admin->value) ? true : null;
         });
+
+        Gate::define('site-admin', fn (User $user) => $user->is_site_admin);
+
+        // Invite links are public: keep brute force and sign-up spam in check.
+        RateLimiter::for('join', fn (Request $request) => Limit::perMinute(30)->by($request->ip()));
+        RateLimiter::for('join-register', fn (Request $request) => [
+            Limit::perMinute(5)->by($request->ip()),
+            Limit::perHour(30)->by($request->ip()),
+        ]);
 
         Password::defaults(fn () => $this->app->isProduction()
             ? Password::min(10)->letters()->numbers()->uncompromised()

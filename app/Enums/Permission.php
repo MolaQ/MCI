@@ -19,6 +19,7 @@ enum Permission: string
     case AlertsSendDrill = 'alerts.send.drill';
     case AlertsViewAllStats = 'alerts.view_all_stats';
     case EventsCreate = 'events.create';
+    case EventsPublishPublic = 'events.publish_public';
     case TasksAssignAny = 'tasks.assign.any';
     case StatsView = 'stats.view';
     case AuditView = 'audit.view';

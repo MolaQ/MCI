@@ -5,6 +5,7 @@ use App\Domain\Users\Actions\SendAccountSetupLink;
 use App\Enums\GroupRole;
 use App\Enums\Role;
 use App\Livewire\Admin\Appearance;
+use App\Livewire\Admin\AuditLog;
 use App\Livewire\Admin\Users\Edit;
 use App\Livewire\Admin\Users\Index;
 use App\Livewire\Groups\Edit as GroupEdit;
@@ -46,7 +47,7 @@ it('does not demote a co-leader when they are "added" again', function () {
 });
 
 it('locks the stored logo path against client-side tampering', function () {
-    $this->actingAs(admin());
+    $this->actingAs(siteAdmin());
 
     Livewire::test(Appearance::class)->set('logo_path', 'other/file.png');
 })->throws(CannotUpdateLockedPropertyException::class);
@@ -67,7 +68,7 @@ it('stops a users.manage-only manager from making anyone a group leader via the 
 
 it('saves accounts without any role', function () {
     $this->actingAs(admin());
-    $target = User::factory()->create();
+    $target = member();
 
     Livewire::test(Edit::class, ['user' => $target])
         ->set('first_name', 'Nowe')
@@ -177,3 +178,9 @@ it('does not undo admin decisions when seeders run again on deployment', functio
         ->and(User::query()->where('email', 'admin@szkola.edu.pl')->exists())->toBeFalse()
         ->and(User::withTrashed()->where('email', 'admin@szkola.edu.pl')->first()->hasRole('admin'))->toBeFalse();
 });
+
+it('does not let a school admin switch the school log to the site journal', function () {
+    $this->actingAs(admin());
+
+    Livewire::test(AuditLog::class)->set('scope', 'site');
+})->throws(CannotUpdateLockedPropertyException::class);

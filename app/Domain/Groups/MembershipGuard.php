@@ -46,12 +46,14 @@ class MembershipGuard
     }
 
     /**
+     * Memberships in the active school only (other schools are never touched).
+     *
      * @return array<int, string> group_id => role
      */
     public static function currentOf(?User $user): array
     {
         return $user
-            ? $user->groups()->get()->mapWithKeys(fn ($g) => [$g->id => $g->pivot->role->value])->all()
+            ? $user->schoolGroups()->get()->mapWithKeys(fn ($g) => [$g->id => $g->pivot->role->value])->all()
             : [];
     }
 }

@@ -32,6 +32,20 @@ return [
         'staff' => 'Pracownik',
         'student' => 'Uczeń',
     ],
+    'profile_visibility' => [
+        'school' => 'Tylko moje szkoły',
+        'network' => 'Wszystkie szkoły w MCI',
+        'public' => 'Publicznie',
+    ],
+    'profile_visibility_help' => [
+        'school' => 'Profil widzą tylko osoby z Twoich szkół.',
+        'network' => 'Profil widzą też zalogowani użytkownicy innych szkół (np. przy wspólnych wydarzeniach).',
+        'public' => 'Imię, nazwisko i szkoła mogą pojawić się na stronach publicznych (np. jako kontakt do wydarzenia).',
+    ],
+    'invite_kind' => [
+        'personal' => 'Imienne',
+        'group_link' => 'Link / kod QR dla grupy',
+    ],
     'permission' => [
         'users_manage' => 'Zarządzanie kontami',
         'roles_manage' => 'Nadawanie ról i uprawnień',
@@ -43,6 +57,7 @@ return [
         'alerts_send_drill' => 'Wysyłanie alarmów ćwiczebnych',
         'alerts_view_all_stats' => 'Statystyki wszystkich alarmów',
         'events_create' => 'Tworzenie wydarzeń',
+        'events_publish_public' => 'Publikowanie wydarzeń publicznie',
         'tasks_assign_any' => 'Przydzielanie zadań dowolnym osobom',
         'stats_view' => 'Podgląd statystyk',
         'audit_view' => 'Podgląd dziennika zdarzeń',

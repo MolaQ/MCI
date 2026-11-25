@@ -5,6 +5,7 @@ namespace App\Policies;
 use App\Enums\Permission;
 use App\Enums\Role;
 use App\Models\User;
+use App\Support\CurrentSchool;
 
 class UserPolicy
 {
@@ -15,7 +16,7 @@ class UserPolicy
 
     public function view(User $actor, User $user): bool
     {
-        return $actor->is($user) || $actor->can(Permission::UsersManage->value);
+        return $actor->is($user) || ($actor->can(Permission::UsersManage->value) && $this->inActiveSchool($actor, $user));
     }
 
     public function create(User $actor): bool
@@ -25,12 +26,16 @@ class UserPolicy
 
     public function update(User $actor, User $user): bool
     {
-        if (! $actor->can(Permission::UsersManage->value)) {
+        if (! $actor->can(Permission::UsersManage->value) || ! $this->inActiveSchool($actor, $user)) {
             return false;
         }
 
-        // Only admins may edit other admins.
-        return ! $user->hasRole(Role::Admin->value) || $actor->isAdmin();
+        if ($user->is_site_admin && ! $actor->is_site_admin) {
+            return false;
+        }
+
+        // Only admins may edit other admins (of this school).
+        return ! $user->hasRole(Role::Admin->value) || $actor->isAdmin() || $actor->is_site_admin;
     }
 
     /**
@@ -53,8 +58,23 @@ class UserPolicy
         return $this->suspend($actor, $user);
     }
 
+    public function deleteAccount(User $actor, User $user): bool
+    {
+        return $actor->is_site_admin && ! $actor->is($user);
+    }
+
     public function import(User $actor): bool
     {
         return $actor->can(Permission::UsersManage->value);
+    }
+
+    /**
+     * School admins act only on people of the active school.
+     */
+    private function inActiveSchool(User $actor, User $user): bool
+    {
+        $schoolId = app(CurrentSchool::class)->id();
+
+        return $schoolId !== null && $user->schools()->whereKey($schoolId)->exists();
     }
 }

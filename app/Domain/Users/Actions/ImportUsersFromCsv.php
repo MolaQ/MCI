@@ -9,6 +9,7 @@ use App\Enums\Role;
 use App\Models\Group;
 use App\Models\User;
 use App\Support\Audit;
+use App\Support\CurrentSchool;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
@@ -106,27 +107,31 @@ class ImportUsersFromCsv
             }
 
             $existing = User::withTrashed()->where('email', $row['email'])->first();
-            if ($existing && ! $updateExisting) {
+            if ($existing?->trashed()) {
+                $result['errors'][$line] = __('Konto z tym adresem zostało usunięte. Przywrócić je może administrator witryny.');
+
+                continue;
+            }
+
+            $inSchool = (bool) $existing?->schools()->whereKey(app(CurrentSchool::class)->id())->exists();
+            if ($existing && $inSchool && ! $updateExisting) {
                 $result['skipped']++;
 
                 continue;
             }
 
-            if ($existing?->trashed()) {
-                $result['errors'][$line] = __('Konto :email zostało usunięte — import go nie przywraca.', ['email' => $row['email']]);
-
-                continue;
-            }
-
-            if ($existing && ! $gate->allows('update', $existing)) {
+            // Someone already in this school is edited under the user form's
+            // rules; someone from another school only joins (their personal
+            // data is never touched), so only roles and groups need checking.
+            if ($existing && $inSchool && ! $gate->allows('update', $existing)) {
                 $result['errors'][$line] = __('Brak uprawnień do edycji konta :email.', ['email' => $row['email']]);
 
                 continue;
             }
 
             // Roles: same rules as the user form.
-            $canManageAccess = $existing ? $gate->allows('manageAccess', $existing) : $gate->allows(Permission::RolesManage->value);
-            $roleChanges = $existing ? $existing->getRoleNames()->all() !== [$row['role']] : true;
+            $canManageAccess = $existing && $inSchool ? $gate->allows('manageAccess', $existing) : $gate->allows(Permission::RolesManage->value);
+            $roleChanges = $existing && $inSchool ? $existing->getRoleNames()->all() !== [$row['role']] : true;
             $setRoles = $canManageAccess;
 
             if ($roleChanges && ! $canManageAccess) {
@@ -152,7 +157,7 @@ class ImportUsersFromCsv
             }
 
             $row['set_roles'] = $setRoles;
-            $prepared[] = [$row, $groups, $existing];
+            $prepared[] = [$row, $groups, $existing, $inSchool];
             $existing ? $result['updated']++ : $result['created']++;
         }
 
@@ -163,7 +168,7 @@ class ImportUsersFromCsv
         $toNotify = [];
 
         DB::transaction(function () use ($prepared, &$toNotify) {
-            foreach ($prepared as [$row, $groups, $existing]) {
+            foreach ($prepared as [$row, $groups, $existing, $inSchool]) {
                 $data = [
                     'first_name' => trim($row['first_name']),
                     'last_name' => trim($row['last_name']),
@@ -172,8 +177,16 @@ class ImportUsersFromCsv
                     'groups' => $groups,
                 ];
 
+                $data['joined_via'] = 'import';
+
                 if ($row['set_roles']) {
                     $data['roles'] = [$row['role']];
+                }
+
+                if ($existing && ! $inSchool) {
+                    // Someone who already has an account in another school: join
+                    // them to this school, but never overwrite their personal data.
+                    unset($data['first_name'], $data['last_name'], $data['email'], $data['phone']);
                 }
 
                 $user = $this->saveUser->handle($data, $existing);
@@ -257,7 +270,7 @@ class ImportUsersFromCsv
     private function groupIndex(): array
     {
         $index = [];
-        foreach (Group::query()->get(['id', 'name', 'slug']) as $group) {
+        foreach (Group::query()->inCurrentSchool()->get(['id', 'name', 'slug']) as $group) {
             $index[Str::lower($group->name)] = $group->id;
             $index[Str::lower($group->slug)] = $group->id;
         }
