@@ -43,6 +43,7 @@ it('keeps permission changes made by an admin when the seeder runs again', funct
 it('lets a user without a role log in but see no admin area', function () {
     $user = User::factory()->create();
 
-    $this->actingAs($user)->get('/')->assertOk();
+    $this->actingAs($user)->get('/')->assertRedirect(route('dashboard'));
+    $this->actingAs($user)->get('/pulpit')->assertOk();
     $this->actingAs($user)->get('/administracja/uzytkownicy')->assertForbidden();
 });

@@ -23,7 +23,7 @@ ordinary shared PHP hosting (cron only); a VPS is optional.
 
 ## Local development
 
-Requirements: PHP 8.3+, Composer, Node 20+, MySQL 8 / MariaDB 10.6+ (or SQLite for a quick start).
+Requirements: PHP 8.3+, Composer, Node 20+, MySQL 8 / MariaDB 10.6+.
 
 ```bash
 composer install
@@ -36,17 +36,23 @@ php artisan storage:link
 php artisan serve
 ```
 
-Quick start without MySQL: set `DB_CONNECTION=sqlite`, remove the other `DB_*`
-lines and run `touch database/database.sqlite` before migrating.
-
 ## Tests
 
+Tests run on MySQL / MariaDB only, in a separate database called `mci_test`
+(the suite empties it on every run and refuses any database whose name does not
+contain "test"). Host, port, user and password come from your `.env`.
+
+```sql
+CREATE DATABASE mci_test CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+GRANT ALL ON mci_test.* TO 'mci'@'localhost';   -- or the user from your .env
+```
+
 ```bash
-php artisan test              # Pest, SQLite in memory
+php artisan test              # Pest on MySQL/MariaDB (database mci_test)
 vendor/bin/pint               # code style
 ```
 
-CI runs the suite on SQLite and on MySQL 8 (`.github/workflows/tests.yml`).
+CI runs the same suite on MySQL 8 (`.github/workflows/tests.yml`).
 
 ## Conventions
 

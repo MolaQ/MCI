@@ -1,4 +1,4 @@
-<div class="mx-auto max-w-3xl space-y-6">
+<div class="space-y-6">
     <div class="flex items-center justify-between gap-2">
         <flux:button :href="route('events.index')" wire:navigate variant="ghost" size="sm" icon="arrow-left">{{ __('Wydarzenia') }}</flux:button>
         <div class="flex gap-2">
@@ -20,7 +20,7 @@
             @endif
         </div>
         @if ($event->cover)
-            <img src="{{ $event->cover->url() }}" alt="" width="{{ $event->cover->width }}" height="{{ $event->cover->height }}" class="aspect-video w-full rounded-mci object-cover" />
+            <img src="{{ $event->cover->url() }}" alt="" width="{{ $event->cover->width }}" height="{{ $event->cover->height }}" class="aspect-video max-h-[28rem] w-full rounded-mci object-cover" />
         @endif
         <flux:heading size="xl" level="1">{{ $event->title }}</flux:heading>
         <div class="grid gap-3 text-sm sm:grid-cols-2">
@@ -34,7 +34,7 @@
             @endif
         </div>
         @if ($event->description)
-            <div class="whitespace-pre-line text-zinc-700 dark:text-zinc-200">{{ $event->description }}</div>
+            <div class="max-w-4xl whitespace-pre-line text-zinc-700 dark:text-zinc-200">{{ $event->description }}</div>
         @endif
         @if ($event->isPublic() && $event->public_description)
             <div class="rounded-mci bg-zinc-50 p-4 text-sm dark:bg-zinc-800">

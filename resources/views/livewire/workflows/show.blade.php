@@ -1,5 +1,5 @@
 @php($r = $this->request)
-<div class="mx-auto max-w-5xl space-y-6">
+<div class="space-y-6">
     <div class="flex flex-wrap items-center justify-between gap-2">
         <flux:button :href="route('workflows.index')" wire:navigate variant="ghost" size="sm" icon="arrow-left">{{ __('Obiegi') }}</flux:button>
         <div class="flex gap-2">
@@ -12,8 +12,8 @@
         </div>
     </div>
 
-    <div class="grid gap-6 lg:grid-cols-3">
-        <div class="space-y-6 lg:col-span-2">
+    <div class="grid gap-6 lg:grid-cols-3 2xl:grid-cols-4">
+        <div class="min-w-0 space-y-6 lg:col-span-2 2xl:col-span-3">
             <flux:card class="space-y-5">
                 <header class="space-y-3">
                     <div class="flex flex-wrap items-center gap-2">

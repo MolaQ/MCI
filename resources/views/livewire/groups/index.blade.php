@@ -17,7 +17,7 @@
         </flux:select>
     </div>
 
-    <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+    <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
         @forelse ($this->groups as $group)
             <a href="{{ route('groups.show', $group) }}" wire:navigate wire:key="group-{{ $group->id }}"
                class="group block rounded-mci border border-zinc-200 bg-white p-4 transition hover:border-primary dark:border-zinc-700 dark:bg-zinc-900">

@@ -135,7 +135,7 @@ it('keeps the catch-all entry and features chosen categories on the public front
     foreach ([['Bieg', 'sport', 1], ['Dzień otwarty ZSM', 'open_day', 4]] as [$title, $cat, $days]) {
         Event::query()->create(['school_id' => $this->school->id, 'title' => $title, 'category' => $cat, 'visibility' => 'public', 'starts_at' => now()->addDays($days)->setTime(10, 0)]);
     }
-    $list = Livewire::test(Home::class)->viewData('list');
+    $list = Livewire::withQueryParams(['podglad' => 1])->test(Home::class)->viewData('list');
     expect($list->first()->title)->toBe('Dzień otwarty ZSM');
 
     $this->actingAs(siteAdmin());
@@ -143,5 +143,5 @@ it('keeps the catch-all entry and features chosen categories on the public front
     expect(term('open_day')->is_featured)->toBeFalse()
         ->and(AuditLog::query()->where('action', 'catalog.unfeatured')->exists())->toBeTrue();
     app(Taxonomy::class)->forget();
-    expect(Livewire::test(Home::class)->viewData('list')->first()->title)->toBe('Bieg');
+    expect(Livewire::withQueryParams(['podglad' => 1])->test(Home::class)->viewData('list')->first()->title)->toBe('Bieg');
 });

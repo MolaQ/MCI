@@ -122,7 +122,7 @@
 
         <flux:sidebar.nav>
             @feature('public.front')
-                <flux:sidebar.item icon="globe-alt" :href="route('home')">{{ __('Portal publiczny') }}</flux:sidebar.item>
+                <flux:sidebar.item icon="globe-alt" :href="route('home', ['podglad' => 1])">{{ __('Portal publiczny') }}</flux:sidebar.item>
             @endfeature
             @feature('public.tv')
                 <flux:sidebar.item icon="tv" :href="route('tv')">{{ __('Tryb TV') }}</flux:sidebar.item>

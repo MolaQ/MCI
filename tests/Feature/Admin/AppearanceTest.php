@@ -28,7 +28,7 @@ it('saves the theme and emits it as CSS variables for every page', function () {
         ->toContain('--color-accent:#0f766e')
         ->toContain('--mci-radius:0.75rem');
 
-    $this->get('/')->assertSee('--mci-primary:#0f766e', false)->assertSee('ZSM');
+    $this->get('/?podglad=1')->assertSee('--mci-primary:#0f766e', false)->assertSee('ZSM');
 });
 
 it('rejects unsafe colour values', function () {
