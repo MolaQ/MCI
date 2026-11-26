@@ -111,4 +111,16 @@ return [
         ],
     ],
 
+    /*
+    | To-Do (Step 5): default reminder before the due time, in minutes, for
+    | tasks with an hour and for all-day tasks; overdue reminders are sent
+    | once a day, only between these hours (Europe/Warsaw).
+    */
+    'tasks' => [
+        'remind_before_minutes' => (int) env('MCI_TASK_REMIND_MINUTES', 60),
+        'remind_before_minutes_all_day' => (int) env('MCI_TASK_REMIND_MINUTES_ALL_DAY', 24 * 60),
+        'overdue_hours' => [7, 20],
+        'max_checklist_items' => 30,
+    ],
+
 ];

@@ -7,6 +7,7 @@
     @php($user = auth()->user())
     @php($school = app(\App\Support\CurrentSchool::class)->get())
     @php($unreadAnnouncements = $school ? $user->unreadAnnouncementsCount($school->id) : 0)
+    @php($openTasks = $school && app(\App\Support\Features::class)->enabled(\App\Enums\Feature::Tasks) ? \App\Models\Task::query()->assignedTo($user)->where('tasks.school_id', $school->id)->open()->whereNotNull('tasks.due_at')->where('tasks.due_at', '<=', now()->endOfDay())->count() : 0)
 
     <flux:sidebar sticky collapsible="mobile" class="bg-zinc-50 dark:bg-zinc-900 border-e border-zinc-200 dark:border-zinc-700">
         <flux:sidebar.header>
@@ -25,6 +26,11 @@
                 @feature('announcements')
                     <flux:sidebar.item icon="megaphone" :href="route('communication.index')" :current="request()->routeIs('communication.*')" :badge="$unreadAnnouncements ?: null" wire:navigate>
                         {{ __('Komunikaty') }}
+                    </flux:sidebar.item>
+                @endfeature
+                @feature('tasks')
+                    <flux:sidebar.item icon="check-circle" :href="route('tasks.index')" :current="request()->routeIs('tasks.*')" :badge="$openTasks ?: null" wire:navigate>
+                        {{ __('Zadania') }}
                     </flux:sidebar.item>
                 @endfeature
                 @feature('events')

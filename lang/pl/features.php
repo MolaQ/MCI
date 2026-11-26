@@ -4,6 +4,7 @@ return [
     'categories' => [
         'communication' => 'Komunikacja',
         'events' => 'Wydarzenia',
+        'tasks' => 'Zadania (To-Do)',
         'public' => 'Portal publiczny i ekrany',
         'groups' => 'Grupy i dołączanie',
         'media' => 'Edytor obrazów',
@@ -22,6 +23,10 @@ return [
         'events_public' => ['label' => 'Wydarzenia publiczne', 'description' => 'Pokazywanie wydarzeń na portalu publicznym.'],
         'events_covers' => ['label' => 'Obrazy wydarzeń', 'description' => 'Okładka wydarzenia (także na portalu, jeśli wydarzenie jest publiczne).'],
         'events_ics' => ['label' => 'Pobieranie do kalendarza (iCal)', 'description' => 'Przycisk „Dodaj do kalendarza” przy publicznych wydarzeniach.'],
+        'tasks' => ['label' => 'Zadania', 'description' => 'Osobista lista zadań i zadania przydzielane innym osobom.'],
+        'tasks_teams' => ['label' => 'Zadania dla grup i ról', 'description' => 'Przydzielanie zadań całym zespołom, grupom i rolom (np. wszystkim nauczycielom).'],
+        'tasks_reminders' => ['label' => 'Przypomnienia o terminach', 'description' => 'Przypomnienie przed terminem i o zaległych zadaniach (dzwonek i push).'],
+        'tasks_attachments' => ['label' => 'Obrazy w zadaniach', 'description' => 'Grafiki i zdjęcia dołączane do zadania przez edytor obrazów.'],
         'public_front' => ['label' => 'Portal publiczny', 'description' => 'Strona szkoły bez logowania. Wyłączenie ukrywa szkołę i jej treści publiczne.'],
         'public_offers' => ['label' => 'Oferta edukacyjna', 'description' => 'Kierunki i formy kształcenia na portalu.'],
         'public_tv' => ['label' => 'Tryb TV', 'description' => 'Tablica pełnoekranowa dla telewizorów na korytarzu.'],

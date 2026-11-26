@@ -13,6 +13,29 @@
         </div>
     @endif
 
+    @feature('tasks')
+    <flux:card class="space-y-3" data-dashboard-tasks>
+        <div class="flex items-center justify-between">
+            <flux:heading size="lg">{{ __('Moje zadania') }}</flux:heading>
+            <flux:button :href="route('tasks.index')" wire:navigate size="xs" variant="ghost" icon-trailing="arrow-right">{{ __('Wszystkie zadania') }}</flux:button>
+        </div>
+        @forelse ($this->myTasks as $t)
+            <a href="{{ route('tasks.show', $t) }}" wire:navigate class="flex items-center gap-3 rounded-mci px-2 py-2 hover:bg-zinc-50 dark:hover:bg-zinc-700/50">
+                <flux:icon :name="$t->status === \App\Enums\TaskStatus::InProgress ? 'play-circle' : 'stop-circle'" variant="mini" @class(['shrink-0', 'text-sky-500' => $t->status === \App\Enums\TaskStatus::InProgress, 'text-zinc-400' => $t->status !== \App\Enums\TaskStatus::InProgress]) />
+                <span class="min-w-0 flex-1 truncate text-sm">{{ $t->title }}</span>
+                @if ($t->priority->value >= 3)
+                    <flux:icon :name="$t->priority->icon()" variant="micro" @class(['shrink-0', 'text-amber-500' => $t->priority->value === 3, 'text-red-600' => $t->priority->value === 4]) />
+                @endif
+                @if ($t->due_at)
+                    <span @class(['shrink-0 text-xs', 'font-semibold text-red-600' => $t->isOverdue(), 'text-zinc-500' => ! $t->isOverdue()])>{{ $t->dueLabel() }}</span>
+                @endif
+            </a>
+        @empty
+            <flux:text>{{ __('Brak zadań na ten tydzień. Dobra robota!') }}</flux:text>
+        @endforelse
+    </flux:card>
+    @endfeature
+
     @feature('announcements')
     <flux:card class="space-y-3">
         <div class="flex items-center justify-between">

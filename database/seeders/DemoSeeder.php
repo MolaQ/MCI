@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use App\Domain\Communication\Actions\PublishAnnouncement;
+use App\Domain\Tasks\Actions\SaveTask;
 use App\Enums\GroupRole;
 use App\Enums\GroupType;
 use App\Enums\Role;
@@ -10,6 +11,7 @@ use App\Models\Announcement;
 use App\Models\Event;
 use App\Models\Group;
 use App\Models\School;
+use App\Models\Task;
 use App\Models\User;
 use App\Support\CurrentSchool;
 use Illuminate\Database\Seeder;
@@ -101,6 +103,7 @@ class DemoSeeder extends Seeder
 
         $this->publicFront($school, $partner);
         $this->announcements($school, $coordinators->first(), $teacherUsers, $subjectGroups->first(), $tutors);
+        $this->tasks($school, $coordinators->first(), $teacherUsers, $tutors);
 
         $this->command?->info('Demo data: 70 staff in '.$school->short_name.', partner school '.$partner->short_name.' with 3 shared teachers.');
     }
@@ -157,6 +160,41 @@ class DemoSeeder extends Seeder
                 'location' => $location, 'visibility' => $visibility, 'public_description' => $public,
             ]);
         }
+    }
+
+    private function tasks(School $school, User $coordinator, $teachers, ?Group $tutors): void
+    {
+        if (Task::query()->where('school_id', $school->id)->exists()) {
+            return;
+        }
+        $save = app(SaveTask::class);
+        $admin = User::query()->where('email', config('mci.admin.email'))->first();
+
+        app(CurrentSchool::class)->set($school, $coordinator);
+        $save->handle($coordinator, $school, [
+            'title' => 'Przygotować pracownie na Dzień Otwarty', 'priority' => 3,
+            'description' => '<p>Sprawdźcie stanowiska i ustawcie prezentacje. <span data-type="mention" data-id="user:'.$teachers[4]->id.'" data-label="x">@x</span> odpowiada za roboty.</p>',
+            'due_date' => now()->addDays(3)->toDateString(), 'due_time' => '15:00',
+        ], $tutors ? ['group:'.$tutors->id] : ['role:teacher'], [
+            ['body' => 'Lista sal i opiekunów'], ['body' => 'Plakaty na korytarzu', 'is_done' => true], ['body' => 'Stanowiska z robotami'],
+        ]);
+        $save->handle($coordinator, $school, [
+            'title' => 'Uzupełnić oceny śródroczne', 'priority' => 4, 'due_date' => now()->subDay()->toDateString(),
+        ], ['role:teacher']);
+        $save->handle($coordinator, $school, [
+            'title' => 'Zebrać zgody na wycieczkę', 'due_date' => now()->toDateString(), 'due_time' => '12:00',
+        ], ['user:'.$teachers[0]->id]);
+
+        if ($admin && $admin->belongsToSchool($school)) {
+            app(CurrentSchool::class)->set($school, $admin);
+            $save->handle($admin, $school, ['title' => 'Zamówić tonery do drukarek', 'due_date' => now()->toDateString()]);
+            $save->handle($admin, $school, ['title' => 'Sprawdzić kopię zapasową', 'priority' => 1]);
+            $save->handle($admin, $school, ['title' => 'Plan dyżurów na grudzień', 'priority' => 3, 'due_date' => now()->addDays(2)->toDateString()], [], [
+                ['body' => 'Parter', 'is_done' => true], ['body' => 'I piętro'], ['body' => 'Boisko'],
+            ]);
+        }
+
+        app(CurrentSchool::class)->set(null);
     }
 
     private function announcements(School $school, User $author, $teachers, Group $subject, ?Group $tutors): void

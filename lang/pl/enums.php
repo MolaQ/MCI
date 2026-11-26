@@ -67,6 +67,20 @@ return [
         'categories_manage' => 'Kategorie wydarzeń i typy grup',
     ],
 
+    'task_status' => [
+        'todo' => 'Do zrobienia',
+        'in_progress' => 'W trakcie',
+        'done' => 'Gotowe',
+        'cancelled' => 'Anulowane',
+    ],
+
+    'task_priority' => [
+        1 => 'Niski',
+        2 => 'Zwykły',
+        3 => 'Wysoki',
+        4 => 'Pilny',
+    ],
+
     'announcement_priority' => [
         'normal' => 'Zwykły',
         'important' => 'Ważny',
