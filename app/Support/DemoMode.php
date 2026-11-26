@@ -29,23 +29,47 @@ class DemoMode
 {
     public const CONNECTION = 'demo';
 
-    /** Defines the "demo" connection and, if the flag is set, switches the app to it. */
+    /** Config keys the switch changes; their production values are kept in mci.demo.base. */
+    private const SWITCHED = ['database.default', 'cache.prefix', 'session.cookie', 'filesystems.disks.media.root'];
+
+    /**
+     * Defines the "demo" connection and sets the switched keys from the flag.
+     *
+     * Runs on every boot, also when the configuration comes from
+     * bootstrap/cache/config.php. A cache built while demo mode was on holds
+     * the demo values, so the production values are remembered once (in
+     * mci.demo.base, which is cached with them) and every boot derives the
+     * switched keys from those and the current flag, never from what the
+     * cache happens to contain.
+     */
     public static function boot(): void
     {
         $main = (string) config('mci.demo.main_connection');
-        $base = (array) config("database.connections.{$main}", []);
-        config(['database.connections.'.self::CONNECTION => array_merge($base, ['database' => self::databaseName()])]);
+        $connection = (array) config("database.connections.{$main}", []);
+        config(['database.connections.'.self::CONNECTION => array_merge($connection, ['database' => self::databaseName()])]);
 
-        if (! self::isOn()) {
-            return;
+        $base = config('mci.demo.base');
+        if (! is_array($base)) {
+            $base = [];
+            foreach (self::SWITCHED as $key) {
+                $base[$key] = config($key);
+            }
+            // A cache written by an older version while demo mode was on.
+            if ($base['database.default'] === self::CONNECTION) {
+                $base['database.default'] = $main;
+                $base['cache.prefix'] = preg_replace('/demo_$/', '', (string) $base['cache.prefix']);
+                $base['session.cookie'] = preg_replace('/_demo$/', '', (string) $base['session.cookie']);
+                $base['filesystems.disks.media.root'] = storage_path('app/media');
+            }
+            config(['mci.demo.base' => $base]);
         }
 
-        config([
+        config(self::isOn() ? [
             'database.default' => self::CONNECTION,
-            'cache.prefix' => config('cache.prefix').'demo_',
-            'session.cookie' => config('session.cookie').'_demo',
+            'cache.prefix' => $base['cache.prefix'].'demo_',
+            'session.cookie' => $base['session.cookie'].'_demo',
             'filesystems.disks.media.root' => storage_path('app/demo/media'),
-        ]);
+        ] : $base);
     }
 
     public static function isOn(): bool
