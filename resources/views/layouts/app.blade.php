@@ -17,7 +17,9 @@
             <flux:sidebar.collapse class="lg:hidden" />
         </flux:sidebar.header>
 
-        <x-app.school-switcher :user="$user" :school="$school" />
+        @unless (\App\Models\School::isSingle() && $school)
+            <x-app.school-switcher :user="$user" :school="$school" />
+        @endunless
 
         @php($features = app(\App\Support\Features::class))
         @php($showAnnouncements = $school && $features->enabled(\App\Enums\Feature::Announcements))
@@ -103,6 +105,11 @@
                         <flux:sidebar.item icon="adjustments-horizontal" :href="route('admin.school.features')" :current="request()->routeIs('admin.school.features')" wire:navigate>
                             {{ __('Funkcje szkoły') }}
                         </flux:sidebar.item>
+                        @feature('public.tv')
+                            <flux:sidebar.item icon="tv" :href="route('admin.school.tv')" :current="request()->routeIs('admin.school.tv')" wire:navigate>
+                                {{ __('Ekrany TV') }}
+                            </flux:sidebar.item>
+                        @endfeature
                     @endcan
                     @can('categories.manage')
                         <flux:sidebar.item icon="tag" :href="route('admin.school.catalog')" :current="request()->routeIs('admin.school.catalog')" wire:navigate>
@@ -138,6 +145,9 @@
                     </flux:sidebar.item>
                     <flux:sidebar.item icon="clipboard-document-check" :href="route('site.workflows')" :current="request()->routeIs('site.workflows*')" wire:navigate>
                         {{ __('Szablony obiegów') }}
+                    </flux:sidebar.item>
+                    <flux:sidebar.item icon="tv" :href="route('site.tv')" :current="request()->routeIs('site.tv')" wire:navigate>
+                        {{ __('Ekrany TV') }}
                     </flux:sidebar.item>
                     <flux:sidebar.item icon="beaker" :href="route('site.demo')" :current="request()->routeIs('site.demo')" wire:navigate>
                         {{ __('Tryb demo') }}
@@ -177,7 +187,10 @@
         @if (session('status'))
             <flux:callout variant="success" icon="check-circle" :heading="session('status')" class="mb-6" />
         @endif
-        {{ $slot }}
+        {{-- Comfortable reading width and outer margins on wide screens. --}}
+        <div class="mx-auto w-full max-w-[112rem] xl:px-4 2xl:px-10">
+            {{ $slot }}
+        </div>
     </flux:main>
 
     @persist('toast')

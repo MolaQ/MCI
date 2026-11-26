@@ -55,7 +55,7 @@ class SaveProject
         }
         $kind = ProjectKind::tryFrom((string) ($data['kind'] ?? '')) ?? ProjectKind::Other;
         $status = ProjectStatus::tryFrom((string) ($data['status'] ?? '')) ?? ProjectStatus::Planned;
-        $visibility = ($data['visibility'] ?? 'school') === 'team' ? 'team' : 'school';
+        $visibility = in_array($data['visibility'] ?? null, ['school', 'team', 'public'], true) ? $data['visibility'] : 'school';
         $startsOn = $this->date($data['starts_on'] ?? null, 'starts_on');
         $endsOn = $this->date($data['ends_on'] ?? null, 'ends_on');
         if ($startsOn && $endsOn && $endsOn->lt($startsOn)) {

@@ -23,6 +23,8 @@
             </a>
 
             <nav class="ms-auto hidden items-center gap-1 text-sm md:flex" aria-label="{{ __('Sekcje') }}">
+                <a href="{{ $home }}#dzis" class="rounded-mci px-3 py-1.5 text-zinc-600 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-800">{{ __('Dziś') }}</a>
+                <a href="{{ $home }}#kalendarz" class="rounded-mci px-3 py-1.5 text-zinc-600 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-800">{{ __('Kalendarz') }}</a>
                 <a href="{{ $home }}#komunikaty" class="rounded-mci px-3 py-1.5 text-zinc-600 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-800">{{ __('Komunikaty') }}</a>
                 <a href="{{ $home }}#wydarzenia" class="rounded-mci px-3 py-1.5 text-zinc-600 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-800">{{ __('Wydarzenia') }}</a>
                 @if ($manySchools)

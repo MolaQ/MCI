@@ -3,6 +3,7 @@
 namespace App\Livewire\Settings;
 
 use App\Actions\Fortify\UpdateUserPassword;
+use App\Domain\Calendar\Agenda;
 use App\Enums\ProfileVisibility;
 use App\Support\Audit;
 use Flux\Flux;
@@ -24,6 +25,9 @@ class Profile extends Component
 
     public const FIELDS = ['email', 'phone', 'groups'];
 
+    /** '' = follow the school's default. */
+    public string $calendar = '';
+
     public string $current_password = '';
 
     public string $password = '';
@@ -34,6 +38,7 @@ class Profile extends Component
     {
         $user = Auth::user();
         $this->phone = (string) $user->phone;
+        $this->calendar = in_array($user->notification_prefs['calendar'] ?? null, Agenda::MODES, true) ? $user->notification_prefs['calendar'] : '';
         $this->profile_visibility = ($user->profile_visibility ?? ProfileVisibility::School)->value;
         $this->profile_fields = $user->profile_fields ?? ['groups'];
     }
@@ -55,6 +60,20 @@ class Profile extends Component
         }
 
         Flux::toast(variant: 'success', text: __('Zapisano ustawienia prywatności.'));
+    }
+
+    public function updatedCalendar(): void
+    {
+        $user = Auth::user();
+        $prefs = $user->notification_prefs ?? [];
+        if (in_array($this->calendar, Agenda::MODES, true)) {
+            $prefs['calendar'] = $this->calendar;
+        } else {
+            unset($prefs['calendar']);
+            $this->calendar = '';
+        }
+        $user->forceFill(['notification_prefs' => $prefs])->save();
+        Flux::toast(text: __('Zapisano domyślny widok kalendarza.'));
     }
 
     public function saveProfile(): void

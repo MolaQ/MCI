@@ -140,16 +140,19 @@ it('lays out the information centre: summary, one filter row, featured event and
         makeEvent(['title' => "Wydarzenie $i", 'starts_at' => now()->addDays($i)->setTime(10, 0), 'category' => $i % 2 ? 'sport' : 'open_day']);
     }
 
+    // The grid pages (the month calendar above it lists every event of the month).
+    $titles = fn ($c) => $c->viewData('list')->pluck('title')->all();
     $c = Livewire::test(Home::class)
-        ->assertSee('Wydarzenie 1')->assertSee('Wydarzenie 7')->assertDontSee('Wydarzenie 8')
-        ->assertSee('Pokaż więcej wydarzeń')
+        ->assertSee('Wydarzenie 1')->assertSee('Pokaż więcej wydarzeń')
         ->assertSet('limit', 7);
+    expect($titles($c))->toContain('Wydarzenie 7')->not->toContain('Wydarzenie 8');
 
     // Only categories that have events are offered, with counts.
     expect($c->instance()->categories->pluck('term.key')->all())->toEqualCanonicalizing(['sport', 'open_day'])
         ->and($c->instance()->summary['schools'])->toBe(1);
 
-    $c->call('loadMore')->assertSee('Wydarzenie 9')->assertDontSee('Pokaż więcej wydarzeń');
+    $c->call('loadMore')->assertDontSee('Pokaż więcej wydarzeń');
+    expect($titles($c))->toContain('Wydarzenie 9');
     $c->call('setFilter', 'category', 'open_day')->assertSet('limit', 7)->assertSee('Wydarzenie 2')
         ->call('setFilter', 'when', 'nonsense')->assertSet('when', 'upcoming')
         ->call('resetFilters')->assertSet('category', '');

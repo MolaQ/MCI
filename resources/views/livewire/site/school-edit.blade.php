@@ -35,6 +35,11 @@
                 @endforeach
             </flux:radio.group>
             <flux:text size="sm">{{ __('Każda osoba sama wybiera widoczność swojego profilu; ta wartość jest górnym limitem dla wszystkich członków szkoły.') }}</flux:text>
+            <flux:radio.group wire:model="calendar_default" :label="__('Domyślny widok kalendarza na pulpicie')" variant="segmented" size="sm" data-calendar-default>
+                <flux:radio value="personal" :label="__('Mój kalendarz')" />
+                <flux:radio value="school" :label="__('Kalendarz szkoły')" />
+            </flux:radio.group>
+            <flux:text size="sm">{{ __('„Mój” pokazuje wydarzenia szkoły oraz zadania, kamienie milowe i decyzje danej osoby; „Szkoły” — wydarzenia i kamienie milowe wszystkich projektów. Każdy może zmienić to u siebie.') }}</flux:text>
         </flux:card>
 
         <div class="lg:col-span-2">

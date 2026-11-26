@@ -206,7 +206,7 @@ class Edit extends Component
             'name' => ['required', 'string', 'max:200'],
             'kind' => ['required', 'in:'.implode(',', array_column(ProjectKind::cases(), 'value'))],
             'status' => ['required', 'in:'.implode(',', array_column(ProjectStatus::cases(), 'value'))],
-            'visibility' => ['required', 'in:school,team'],
+            'visibility' => ['required', 'in:school,team,public'],
             'starts_on' => ['nullable', 'date_format:Y-m-d'],
             'ends_on' => ['nullable', 'date_format:Y-m-d'],
             'coordinator_id' => ['required', 'integer'],

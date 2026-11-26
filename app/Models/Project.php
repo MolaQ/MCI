@@ -3,9 +3,11 @@
 namespace App\Models;
 
 use App\Domain\Communication\Audience;
+use App\Enums\Feature;
 use App\Enums\ProjectKind;
 use App\Enums\ProjectStatus;
 use App\Enums\TaskStatus;
+use App\Support\Features;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -143,9 +145,35 @@ class Project extends Model
 
         $query->where(function (Builder $w) use ($user, $schoolIds, $managedSchoolId) {
             $w->where(fn (Builder $q) => $q->involving($user))
-                ->orWhere(fn (Builder $q) => $q->where('projects.visibility', 'school')->inSchools($schoolIds))
+                ->orWhere(fn (Builder $q) => $q->whereIn('projects.visibility', ['school', 'public'])->inSchools($schoolIds))
                 ->when($managedSchoolId, fn ($q) => $q->orWhere(fn (Builder $m) => $m->inSchools([$managedSchoolId])));
         });
+    }
+
+    /** Columns a public view may read: never the team, budget or description. */
+    public const PUBLIC_COLUMNS = ['id', 'school_id', 'name', 'kind', 'status', 'starts_on', 'ends_on', 'cover_media_id', 'completed_at'];
+
+    /**
+     * Shown on the public front and the TV board: marked public, not
+     * cancelled, owner school active and listed, Projects and the public
+     * front switched on for it.
+     */
+    public function scopePubliclyVisible(Builder $query): void
+    {
+        $features = app(Features::class);
+        $query->select(array_map(fn ($c) => 'projects.'.$c, self::PUBLIC_COLUMNS))
+            ->where('projects.visibility', 'public')
+            ->where('projects.status', '!=', ProjectStatus::Cancelled->value)
+            ->whereHas('school', fn ($s) => $s->where('is_active', true)->where('is_listed', true))
+            ->when($features->disabled(Feature::Projects, null), fn ($q) => $q->whereRaw('1 = 0'))
+            ->whereNotIn('projects.school_id', $features->schoolsWithout(Feature::Projects)->merge($features->schoolsWithout(Feature::PublicFront)));
+    }
+
+    /** Overlaps the period (projects without dates run from creation, open-ended). */
+    public function scopeOverlapping(Builder $query, \DateTimeInterface $from, \DateTimeInterface $to): void
+    {
+        $query->where(fn ($q) => $q->whereNull('projects.starts_on')->orWhere('projects.starts_on', '<=', $to->format('Y-m-d')))
+            ->where(fn ($q) => $q->whereNull('projects.ends_on')->orWhere('projects.ends_on', '>=', $from->format('Y-m-d')));
     }
 
     /** Owned by, or shared with, one of these schools. */

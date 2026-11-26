@@ -27,6 +27,8 @@
                     @endforeach
                     @if ($p->visibility === 'team')
                         <span class="inline-flex items-center gap-1"><flux:icon name="lock-closed" variant="micro" /> {{ __('tylko zespół') }}</span>
+                    @elseif ($p->visibility === 'public')
+                        <span class="inline-flex items-center gap-1"><flux:icon name="globe-alt" variant="micro" /> {{ __('publiczny') }}</span>
                     @endif
                 </div>
                 <flux:heading size="xl" level="1">{{ $p->name }}</flux:heading>

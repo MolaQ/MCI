@@ -137,7 +137,49 @@
     </section>
 
     <div class="mci-wrap mt-4 space-y-10" wire:loading.class="opacity-60" wire:target="setFilter,resetFilters">
-        {{-- 3. Public announcements first --}}
+        @php($card = 'rounded-2xl border border-zinc-200/80 bg-white p-5 shadow-xs sm:p-6 dark:border-zinc-700/80 dark:bg-zinc-800/60')
+        {{-- 3. What is happening: today, then the month --}}
+        <div class="grid items-start gap-6 xl:grid-cols-12">
+            <section id="dzis" class="{{ $card }} scroll-mt-20 min-w-0 xl:col-span-5" aria-labelledby="dzis-h" data-public-agenda>
+                <div class="mb-4 flex flex-wrap items-center gap-x-3 gap-y-1">
+                    <h2 id="dzis-h" class="flex items-center gap-2 text-lg font-semibold text-zinc-900 dark:text-white"><flux:icon name="sun" variant="mini" class="text-amber-500" /> {{ __('Agenda dnia') }}</h2>
+                    <span class="text-sm text-zinc-500 first-letter:uppercase">{{ now()->translatedFormat('l, j F') }}</span>
+                </div>
+                @php($key = $this->announcements->filter(fn ($a) => $a->isPinned() || $a->priority !== \App\Enums\AnnouncementPriority::Normal || $a->published_at->isToday())->take(2))
+                @if ($key->isNotEmpty())
+                    <div class="mb-4 space-y-2">
+                        @foreach ($key as $a)
+                            <a href="{{ route('public.announcement', $a) }}" @class(['flex items-center gap-3 rounded-xl border px-3.5 py-2.5 text-sm transition',
+                                'border-red-200 bg-red-50 text-red-900 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-100' => $a->priority === \App\Enums\AnnouncementPriority::Urgent,
+                                'border-amber-200 bg-amber-50 text-amber-900 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-100' => $a->priority === \App\Enums\AnnouncementPriority::Important,
+                                'border-zinc-200 bg-zinc-50 text-zinc-800 hover:border-zinc-300 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100' => $a->priority === \App\Enums\AnnouncementPriority::Normal])>
+                                <flux:icon :name="$a->isPinned() ? 'bookmark' : $a->priority->icon()" variant="mini" class="shrink-0" />
+                                <span class="min-w-0 flex-1 truncate font-medium">{{ $a->title }}</span>
+                                <span class="shrink-0 text-xs opacity-70">{{ $a->published_at->translatedFormat('j M') }}</span>
+                            </a>
+                        @endforeach
+                    </div>
+                @endif
+                <x-calendar.agenda :items="$this->today" :navigate="false" :empty="__('Dziś brak wydarzeń publicznych.')" />
+            </section>
+
+            <section id="kalendarz" class="{{ $card }} scroll-mt-20 min-w-0 xl:col-span-7" aria-label="{{ __('Kalendarz') }}" data-public-calendar>
+                <x-calendar.month :month="$currentMonth" :days="$this->monthDays" :navigate="false" compact />
+            </section>
+        </div>
+
+        {{-- 4. Public projects stretched over time --}}
+        @if ($this->timeline->isNotEmpty())
+            <section id="projekty" class="{{ $card }} scroll-mt-20" aria-labelledby="projekty-h" data-public-timeline>
+                <div class="mb-4 flex flex-wrap items-center gap-x-3 gap-y-1">
+                    <h2 id="projekty-h" class="flex items-center gap-2 text-lg font-semibold text-zinc-900 dark:text-white"><flux:icon name="rectangle-stack" variant="mini" class="text-violet-500" /> {{ __('Projekty w czasie') }}</h2>
+                    <span class="text-sm text-zinc-500">{{ $this->window['from']->translatedFormat('j M') }} – {{ $this->window['to']->translatedFormat('j M Y') }}</span>
+                </div>
+                <x-calendar.timeline :projects="$this->timeline" :from="$this->window['from']" :to="$this->window['to']" :links="false" />
+            </section>
+        @endif
+
+        {{-- 5. Public announcements --}}
         <section id="komunikaty" class="scroll-mt-20 space-y-3" aria-labelledby="komunikaty-h">
             <h2 id="komunikaty-h" class="flex items-center gap-2 text-lg font-semibold text-zinc-900 dark:text-white"><flux:icon name="megaphone" variant="mini" class="text-zinc-500" /> {{ $focus ? __('Komunikaty: :school', ['school' => $focus->short_name]) : __('Komunikaty') }}</h2>
             @if ($this->announcements->isNotEmpty())
@@ -169,7 +211,7 @@
             @endif
         </section>
 
-        {{-- 4. Public events: the featured one (two columns wide), then the rest --}}
+        {{-- 6. Public events: the featured one (two columns wide), then the rest --}}
         <section id="wydarzenia" class="scroll-mt-20 space-y-3" aria-labelledby="wydarzenia-h">
             <h2 id="wydarzenia-h" class="flex items-center gap-2 text-lg font-semibold text-zinc-900 dark:text-white"><flux:icon name="calendar-days" variant="mini" class="text-zinc-500" /> {{ __('Wydarzenia') }}</h2>
             @if ($list->isNotEmpty())
@@ -197,7 +239,7 @@
             @endif
         </section>
 
-        {{-- 5. Educational offer: a light block, only when the school has it switched on --}}
+        {{-- 7. Educational offer: a light block, only when the school has it switched on --}}
         @if ($focus && $this->offers->isNotEmpty())
             <aside class="flex flex-col gap-3 rounded-mci border border-zinc-200 bg-zinc-100/60 px-5 py-4 sm:flex-row sm:items-center dark:border-zinc-700 dark:bg-zinc-800/40" data-offer-block aria-label="{{ __('Oferta edukacyjna') }}">
                 <span class="flex shrink-0 items-center gap-2 text-sm font-medium text-zinc-700 dark:text-zinc-200"><flux:icon name="academic-cap" variant="mini" class="text-zinc-500" /> {{ __('Oferta edukacyjna') }}</span>
@@ -211,7 +253,7 @@
         @endif
     </div>
 
-    {{-- 6. School directory (not needed when there is only one school) --}}
+    {{-- 8. School directory (not needed when there is only one school) --}}
     @unless ($sole)
         <section id="szkoly" class="mci-wrap mt-14 scroll-mt-20 space-y-5">
             <div>

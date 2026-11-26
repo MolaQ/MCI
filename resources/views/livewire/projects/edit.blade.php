@@ -149,6 +149,7 @@
                 <flux:radio.group wire:model="visibility" :label="__('Kto widzi projekt')">
                     <flux:radio value="school" :label="__('Cała szkoła (i szkoły partnerskie)')" />
                     <flux:radio value="team" :label="__('Tylko zespół projektu')" />
+                    <flux:radio value="public" :label="__('Publicznie')" :description="__('Nazwa, termin i postęp także na portalu publicznym i tablicy TV. Zespół, budżet i opis zostają wewnętrzne.')" />
                 </flux:radio.group>
 
                 @if ($errors->any())
