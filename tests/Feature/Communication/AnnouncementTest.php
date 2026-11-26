@@ -3,6 +3,7 @@
 use App\Domain\Communication\Actions\PublishAnnouncement;
 use App\Enums\Role;
 use App\Livewire\Communication\Center;
+use App\Livewire\Communication\Compose;
 use App\Livewire\Communication\Show;
 use App\Models\Announcement;
 use App\Models\Group;
@@ -166,4 +167,13 @@ it('searches mentions only inside the active school', function () {
 
     $this->actingAs($me)->getJson(route('mentions.search', ['q' => 'Zenon']))
         ->assertOk()->assertJsonFragment(['label' => 'Zenon Tutejszy'])->assertJsonMissing(['label' => 'Zenon Obcy']);
+});
+
+it('lists every reason next to the send button when the composer refuses to send', function () {
+    $this->actingAs(userWithRole(Role::Coordinator));
+
+    Livewire::test(Compose::class)
+        ->set('title', 'Bez odbiorców')->set('body', '<p>Treść</p>')
+        ->call('save')->assertHasErrors('audience')
+        ->assertSeeHtml('data-compose-errors')->assertSee('Komunikat nie został wysłany');
 });

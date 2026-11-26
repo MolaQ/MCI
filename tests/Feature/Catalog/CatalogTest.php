@@ -6,6 +6,7 @@ use App\Enums\TaxonomyKind;
 use App\Livewire\Catalog\Manage;
 use App\Livewire\Events\Edit as EventEdit;
 use App\Livewire\Groups\Edit as GroupEdit;
+use App\Livewire\Publicly\Home;
 use App\Models\AuditLog;
 use App\Models\Event;
 use App\Models\Group;
@@ -116,4 +117,31 @@ it('protects both category screens', function () {
     $this->actingAs(admin())->get(route('site.catalog'))->assertForbidden();
     $this->actingAs(admin())->get(route('admin.school.catalog'))->assertOk()->assertSee('Dzień otwarty');
     $this->actingAs(siteAdmin())->get(route('site.catalog').'?lista=group_type')->assertOk()->assertSee('Koło / klub');
+});
+
+it('keeps the catch-all entry and features chosen categories on the public front', function () {
+    $this->actingAs(siteAdmin());
+    $other = term('other');
+
+    Livewire::test(Manage::class, ['scope' => 'site'])->call('toggleActive', $other->id)->assertHasErrors('term');
+    Livewire::test(Manage::class, ['scope' => 'site'])->call('delete', $other->id)->assertHasErrors('term');
+    expect($other->fresh()->is_active)->toBeTrue();
+
+    $this->actingAs(admin());
+    Livewire::test(Manage::class)->call('toggleHidden', $other->id)->assertHasErrors('term');
+
+    // Open days are featured by default; the nearest open day goes to the large tile even if a sport event is sooner.
+    expect(term('open_day')->is_featured)->toBeTrue()->and(term('sport')->is_featured)->toBeFalse();
+    foreach ([['Bieg', 'sport', 1], ['Dzień otwarty ZSM', 'open_day', 4]] as [$title, $cat, $days]) {
+        Event::query()->create(['school_id' => $this->school->id, 'title' => $title, 'category' => $cat, 'visibility' => 'public', 'starts_at' => now()->addDays($days)->setTime(10, 0)]);
+    }
+    $list = Livewire::test(Home::class)->viewData('list');
+    expect($list->first()->title)->toBe('Dzień otwarty ZSM');
+
+    $this->actingAs(siteAdmin());
+    Livewire::test(Manage::class, ['scope' => 'site'])->call('toggleFeatured', term('open_day')->id);
+    expect(term('open_day')->is_featured)->toBeFalse()
+        ->and(AuditLog::query()->where('action', 'catalog.unfeatured')->exists())->toBeTrue();
+    app(Taxonomy::class)->forget();
+    expect(Livewire::test(Home::class)->viewData('list')->first()->title)->toBe('Bieg');
 });

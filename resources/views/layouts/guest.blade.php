@@ -9,11 +9,12 @@
             @if ($appearance->logoUrl())
                 <img src="{{ $appearance->logoUrl() }}" alt="" class="h-14 w-auto" />
             @else
-                <span class="flex size-14 items-center justify-center rounded-mci bg-primary text-xl font-bold text-primary-foreground">
-                    {{ $appearance->shortName() }}
+                <span class="flex size-14 items-center justify-center rounded-mci bg-primary text-base font-bold tracking-tight text-primary-foreground">
+                    {{ \Illuminate\Support\Str::limit($appearance->shortName(), 4, '') }}
                 </span>
             @endif
-            <span class="text-center text-sm font-medium text-zinc-600 dark:text-zinc-300">{{ $appearance->schoolName() }}</span>
+            <span class="text-center text-lg font-bold text-zinc-900 dark:text-white">{{ $appearance->shortName() }}</span>
+            <span class="-mt-2 text-center text-sm font-medium text-zinc-600 dark:text-zinc-300">{{ $appearance->schoolName() }}</span>
         </a>
 
         <div class="w-full max-w-sm">

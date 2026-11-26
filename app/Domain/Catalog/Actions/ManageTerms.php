@@ -113,6 +113,7 @@ class ManageTerms
     public function setActive(User $user, TaxonomyTerm $term, ?School $school, bool $active): void
     {
         $this->guardScope($user, $term, $school);
+        $this->guardFallback($term, ! $active);
         $term->update(['is_active' => $active]);
         $this->audit($school, $active ? 'catalog.restored' : 'catalog.archived', $term, ['kind' => $term->kind->value, 'name' => $term->name]);
     }
@@ -121,6 +122,7 @@ class ManageTerms
     public function delete(User $user, TaxonomyTerm $term, ?School $school): void
     {
         $this->guardScope($user, $term, $school);
+        $this->guardFallback($term);
 
         if ($this->usage($term) > 0) {
             throw ValidationException::withMessages(['term' => __('Tej pozycji używają istniejące wpisy. Zamiast usuwać, zarchiwizuj ją.')]);
@@ -136,9 +138,19 @@ class ManageTerms
     {
         $this->authorize($user, $term->kind, $school);
         abort_unless($term->isGlobal(), 404);
+        $this->guardFallback($term, $hidden);
 
         $this->taxonomy->setHidden($term->kind, $school, $term->key, $hidden);
         $this->audit($school, $hidden ? 'catalog.hidden' : 'catalog.shown', $term, ['kind' => $term->kind->value, 'name' => $term->name]);
+    }
+
+    /** Featured event categories fill the large tile on the public front. */
+    public function setFeatured(User $user, TaxonomyTerm $term, ?School $school, bool $featured): void
+    {
+        $this->guardScope($user, $term, $school);
+        abort_unless($term->kind === TaxonomyKind::EventCategory, 404);
+        $term->update(['is_featured' => $featured]);
+        $this->audit($school, $featured ? 'catalog.featured' : 'catalog.unfeatured', $term, ['kind' => $term->kind->value, 'name' => $term->name]);
     }
 
     /** How many records use the term: in its school, or everywhere for a site-wide term. */
@@ -153,6 +165,13 @@ class ManageTerms
             ->when($term->isGlobal() && ! $inSchool, fn ($q) => $q->whereNotIn('school_id', TaxonomyTerm::query()
                 ->ofKind($term->kind)->where('key', $term->key)->whereNotNull('school_id')->select('school_id')))
             ->count();
+    }
+
+    private function guardFallback(TaxonomyTerm $term, bool $removing = true): void
+    {
+        if ($removing && $term->isFallback()) {
+            throw ValidationException::withMessages(['term' => __('„:n” musi zostać na liście, żeby zawsze było co wybrać. Możesz zmienić jej nazwę i ikonę.', ['n' => $term->name])]);
+        }
     }
 
     private function guardScope(User $user, TaxonomyTerm $term, ?School $school): void

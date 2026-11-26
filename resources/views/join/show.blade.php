@@ -80,14 +80,14 @@
                 @endif
                 <flux:input name="password" type="password" :label="__('Hasło')" required autocomplete="new-password" viewable />
                 <flux:input name="password_confirmation" type="password" :label="__('Powtórz hasło')" required autocomplete="new-password" viewable />
-                <flux:checkbox name="accept" value="1" :label="__('Akceptuję zasady korzystania z MCI i przetwarzanie moich danych przez szkołę.')" />
+                <flux:checkbox name="accept" value="1" :label="__('Akceptuję zasady korzystania z :app i przetwarzanie moich danych przez szkołę.', ['app' => $appearance->shortName()])" />
                 <flux:button type="submit" variant="primary" class="w-full">{{ __('Utwórz konto i dołącz') }}</flux:button>
                 @if ($invite->kind === \App\Enums\InviteKind::GroupLink)
                     <flux:text size="sm">{{ __('Wyślemy e-mail z linkiem potwierdzającym. Logowanie będzie możliwe po potwierdzeniu.') }}</flux:text>
                 @endif
             </form>
         @elseif (! $accountExists)
-            <flux:text size="sm">{{ __('To zaproszenie jest tylko dla osób, które mają już konto w MCI. Nie masz konta? Poproś administratora szkoły.') }}</flux:text>
+            <flux:text size="sm">{{ __('To zaproszenie jest tylko dla osób, które mają już konto w :app. Nie masz konta? Poproś administratora szkoły.', ['app' => $appearance->shortName()]) }}</flux:text>
         @endif
     @endif
 </x-layouts::guest>

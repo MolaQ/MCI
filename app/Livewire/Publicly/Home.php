@@ -221,13 +221,21 @@ class Home extends Component
         }
     }
 
+    /** The large tile shows the nearest event of a featured category (e.g. open days), else the nearest one. */
+    private function featuredFirst(Collection $events): Collection
+    {
+        $featured = $events->first(fn (Event $e) => $e->category->is_featured);
+
+        return $featured ? $events->reject(fn (Event $e) => $e->is($featured))->prepend($featured)->values() : $events->values();
+    }
+
     public function render()
     {
         $events = $this->events;
         $activeCategory = $this->categories->firstWhere(fn ($r) => $r['term']->key === $this->category)['term'] ?? null;
 
         return view('livewire.public.home', [
-            'list' => $events->take($this->limit),
+            'list' => $this->featuredFirst($events->take($this->limit)),
             'hasMore' => $events->count() > $this->limit,
             'filtered' => $this->school !== '' || $this->category !== '' || $this->when !== 'upcoming',
             'schoolLabel' => $this->schools->firstWhere('slug', $this->school)?->short_name,

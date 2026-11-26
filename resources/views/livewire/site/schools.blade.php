@@ -1,5 +1,5 @@
 <div class="space-y-6">
-    <x-ui.page-header :title="__('Szkoły')" :subtitle="__('Szkoły korzystające z portalu MCI. Jedna osoba może należeć do kilku szkół.')">
+    <x-ui.page-header :title="__('Szkoły')" :subtitle="__('Szkoły korzystające z portalu :app. Jedna osoba może należeć do kilku szkół.', ['app' => $appearance->shortName()])">
         <x-slot:actions>
             <flux:button variant="primary" icon="plus" :href="route('site.schools.create')" wire:navigate>{{ __('Nowa szkoła') }}</flux:button>
         </x-slot:actions>

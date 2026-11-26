@@ -12,6 +12,12 @@
                     <span class="size-2.5 shrink-0 rounded-full" style="background: {{ $term->color() }}"></span>
                 @endif
                 <span class="truncate">{{ $term->name }}</span>
+                @if ($term->is_featured && $term->kind === \App\Enums\TaxonomyKind::EventCategory)
+                    <flux:badge size="sm" color="zinc" icon="star">{{ __('wyróżniona') }}</flux:badge>
+                @endif
+                @if ($term->isFallback())
+                    <flux:badge size="sm" color="zinc" icon="lock-closed">{{ __('zawsze dostępna') }}</flux:badge>
+                @endif
                 @unless ($term->is_active)
                     <flux:badge size="sm" color="zinc" icon="archive-box">{{ __('archiwum') }}</flux:badge>
                 @endunless
@@ -27,15 +33,21 @@
         @if ($editable)
             <flux:button size="sm" variant="ghost" icon="arrow-up" wire:click="move({{ $term->id }}, -1)" :disabled="$first" :aria-label="__('Wyżej')" />
             <flux:button size="sm" variant="ghost" icon="arrow-down" wire:click="move({{ $term->id }}, 1)" :disabled="$last" :aria-label="__('Niżej')" />
+            @if ($term->kind === \App\Enums\TaxonomyKind::EventCategory)
+                <flux:button size="sm" variant="ghost" icon="star" wire:click="toggleFeatured({{ $term->id }})" :aria-pressed="$term->is_featured ? 'true' : 'false'"
+                    :title="__('Wyróżniaj na stronie głównej')" @class(['!text-primary' => $term->is_featured])>{{ __('Wyróżnij') }}</flux:button>
+            @endif
             <flux:button size="sm" variant="ghost" icon="pencil-square" wire:click="edit({{ $term->id }})">{{ __('Edytuj') }}</flux:button>
-            <flux:button size="sm" variant="ghost" :icon="$term->is_active ? 'archive-box' : 'arrow-uturn-left'" wire:click="toggleActive({{ $term->id }})">
-                {{ $term->is_active ? __('Archiwizuj') : __('Przywróć') }}
-            </flux:button>
-            @if ($usage === 0)
+            @unless ($term->isFallback())
+                <flux:button size="sm" variant="ghost" :icon="$term->is_active ? 'archive-box' : 'arrow-uturn-left'" wire:click="toggleActive({{ $term->id }})">
+                    {{ $term->is_active ? __('Archiwizuj') : __('Przywróć') }}
+                </flux:button>
+            @endunless
+            @if ($usage === 0 && ! $term->isFallback())
                 <flux:button size="sm" variant="ghost" icon="trash" wire:click="delete({{ $term->id }})"
                     wire:confirm="{{ __('Usunąć „:n”? Tej operacji nie można cofnąć.', ['n' => $term->name]) }}">{{ __('Usuń') }}</flux:button>
             @endif
-        @elseif ($scope === 'school' && $mayCustomise && $term->isGlobal())
+        @elseif ($scope === 'school' && $mayCustomise && $term->isGlobal() && ! $term->isFallback())
             <flux:button size="sm" variant="ghost" :icon="$isHidden ? 'eye' : 'eye-slash'" wire:click="toggleHidden({{ $term->id }})">
                 {{ $isHidden ? __('Pokaż w szkole') : __('Ukryj w szkole') }}
             </flux:button>

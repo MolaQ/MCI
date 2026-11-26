@@ -33,7 +33,7 @@ class PwaController
 
         return response()->json([
             'id' => '/pulpit',
-            'name' => $this->appearance->schoolName(),
+            'name' => $this->appearance->shortName().' · '.$this->appearance->schoolName(),
             'short_name' => $this->appearance->shortName(),
             'description' => __('Komunikaty, wydarzenia i alarmy szkoły.'),
             'lang' => 'pl',
@@ -133,10 +133,10 @@ class PwaController
         return $this->png($img);
     }
 
-    /** Short name (max 3 letters), with the bundled DejaVu font when FreeType is there. */
+    /** Short name (max 4 letters), with the bundled DejaVu font when FreeType is there. */
     private function letters(GdImage $img, int $size, int $colour, float $height): void
     {
-        $text = mb_strtoupper(mb_substr($this->appearance->shortName() ?: 'MCI', 0, 3));
+        $text = mb_strtoupper(mb_substr($this->appearance->shortName() ?: 'SOWA', 0, 4));
         $ttf = resource_path('fonts/DejaVuSans-Bold.ttf');
 
         if (function_exists('imagettftext') && is_file($ttf)) {

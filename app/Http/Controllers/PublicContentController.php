@@ -53,7 +53,7 @@ class PublicContentController
         $escape = fn (?string $s) => str_replace(['\\', ';', ',', "\r\n", "\n"], ['\\\\', '\;', '\,', '\n', '\n'], (string) $s);
         $host = parse_url(config('app.url'), PHP_URL_HOST);
 
-        $lines = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//MCI//PL', 'CALSCALE:GREGORIAN'];
+        $lines = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//SOWA//PL', 'CALSCALE:GREGORIAN'];
         if ($name) {
             $lines[] = 'X-WR-CALNAME:'.$escape($name);
             $lines[] = 'X-WR-TIMEZONE:'.config('app.timezone');

@@ -10,6 +10,7 @@ use App\Enums\InviteKind;
 use App\Enums\UserStatus;
 use App\Models\Invite;
 use App\Models\User;
+use App\Support\Appearance;
 use App\Support\Audit;
 use App\Support\CurrentSchool;
 use App\Support\Features;
@@ -112,7 +113,7 @@ class JoinController extends Controller
             $request->session()->regenerate();
             $this->switchTo($request, $invite);
 
-            return redirect()->route('dashboard')->with('status', __('Witaj w MCI! Konto jest aktywne.'));
+            return redirect()->route('dashboard')->with('status', __('Witaj w :app! Konto jest aktywne.', ['app' => app(Appearance::class)->shortName()]));
         }
 
         return redirect()->route('join.pending')->with('email', $user->email);
@@ -136,7 +137,7 @@ class JoinController extends Controller
         $request->session()->regenerate();
         $this->switchTo($request, $invite);
 
-        return redirect()->route('dashboard')->with('status', __('Hasło ustawione. Witaj w MCI!'));
+        return redirect()->route('dashboard')->with('status', __('Hasło ustawione. Witaj w :app!', ['app' => app(Appearance::class)->shortName()]));
     }
 
     public function pending(): View

@@ -36,7 +36,7 @@ return [
     ],
     'profile_visibility' => [
         'school' => 'Tylko moje szkoły',
-        'network' => 'Wszystkie szkoły w MCI',
+        'network' => 'Wszystkie szkoły w portalu',
         'public' => 'Publicznie',
     ],
     'profile_visibility_help' => [

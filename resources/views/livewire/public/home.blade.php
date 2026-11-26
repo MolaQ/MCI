@@ -9,7 +9,7 @@
                     <span class="relative flex size-2"><span class="absolute inline-flex size-full animate-ping rounded-full bg-emerald-500/60 motion-reduce:animate-none"></span><span class="relative inline-flex size-2 rounded-full bg-emerald-500"></span></span>
                     {{ __('Centrum informacyjne szkół') }}
                 </p>
-                <h1 class="max-w-3xl text-3xl font-bold tracking-tight text-balance text-zinc-900 sm:text-4xl lg:text-5xl dark:text-white">{{ $appearance->schoolName() }}</h1>
+                <h1 class="max-w-3xl text-3xl font-bold tracking-tight text-balance text-zinc-900 sm:text-4xl lg:text-5xl dark:text-white">{{ $appearance->shortName() }}<span class="mt-2 block text-xl font-semibold text-zinc-600 sm:text-2xl dark:text-zinc-300">{{ $appearance->schoolName() }}</span></h1>
                 <p class="max-w-2xl text-lg text-zinc-600 dark:text-zinc-300">{{ __('Dni otwarte, konkursy, oferta szkół i komunikaty w jednym miejscu, bez logowania.') }}</p>
 
                 <dl class="grid max-w-2xl grid-cols-2 gap-px overflow-hidden rounded-mci border border-zinc-200 bg-zinc-200 sm:grid-cols-4 dark:border-zinc-700 dark:bg-zinc-700" aria-label="{{ __('Podsumowanie') }}">

@@ -81,8 +81,8 @@ return [
     */
 
     'appearance' => [
-        'school_name' => 'Mechaniczne Centrum Informacyjne',
-        'short_name' => 'MCI',
+        'school_name' => 'Szkolny Ośrodek Wiadomości i Alarmowania',
+        'short_name' => 'SOWA',
         'primary_color' => '#1d4ed8',
         'primary_foreground' => '#ffffff',
         'danger_color' => '#dc2626',

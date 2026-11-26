@@ -6,8 +6,8 @@
             <flux:card class="space-y-5">
                 <flux:heading size="lg">{{ __('Identyfikacja') }}</flux:heading>
                 <div class="grid gap-4 sm:grid-cols-3">
-                    <div class="sm:col-span-2"><flux:input wire:model="school_name" :label="__('Pełna nazwa')" /></div>
-                    <flux:input wire:model="short_name" :label="__('Skrót')" />
+                    <flux:input wire:model="short_name" :label="__('Nazwa systemu')" :description="__('Krótka nazwa w nagłówku, na ekranie logowania, plakatach i ikonie aplikacji, np. SOWA.')" />
+                    <div class="sm:col-span-2"><flux:input wire:model="school_name" :label="__('Podtytuł (pełna nazwa)')" :description="__('Wyświetlany pod nazwą, np. Szkolny Ośrodek Wiadomości i Alarmowania.')" /></div>
                 </div>
 
                 <x-ui.image-editor model="logo" :label="__('Logo systemu')" :current="$logoUrl" remove="removeLogo"

@@ -1,4 +1,6 @@
-# MCI — Mechaniczne Centrum Informacyjne
+# SOWA — Szkolny Ośrodek Wiadomości i Alarmowania
+
+_Repository/code name: MCI. The displayed name and subtitle are set in Wygląd (appearance settings)._
 
 **Architecture, data model, permission model and roadmap (v0.3)**
 
@@ -420,7 +422,8 @@ Indexes: `(status, due_date)` for overdue scans, `(event_id, stage_id, position)
 **`taxonomy_terms`** — `kind` (`event_category` | `group_type`), `school_id` (null = site-wide list), `key` (unique per kind and list, never changes), `name`, `icon` (monochrome Heroicon from a fixed list), `color` (group types only), `position`, `is_active`. `events.category` and `groups.type` store the key; the built-in keys are inserted as site-wide terms by the migration, so old data stays valid.
 
 - A school sees the site-wide list minus the keys it hid (`schools.settings.taxonomy_hidden.{kind}`) plus its own terms. Own terms and hiding need the feature switches `events.school_categories` / `groups.school_types` (site-controlled, on by default).
-- Archived terms are not offered for new records; records already using them keep showing them. Only unused terms can be deleted.
+- Archived terms are not offered for new records; records already using them keep showing them. Only unused terms can be deleted. The site-wide catch-all ("Inne" / "Inna") can be renamed but never archived, hidden or deleted.
+- Event categories can be "wyróżnione" (`is_featured`; open days, competitions and recruitment by default): the nearest event of such a category takes the large tile on the public front.
 - Screens: *Witryna → Kategorie i typy* (site admin) and *Administracja → Kategorie i typy* (permission `categories.manage`). Logic in `App\Domain\Catalog\Actions\ManageTerms`; every change is logged (`catalog.*`) in Dziennik witryny or Logi szkoły.
 
 ## 4. Permission & group model
@@ -555,7 +558,7 @@ All reminder sends go through `task_reminders` for idempotency.
 
 ### 6.1 PWA
 
-- `manifest.webmanifest` (name *MCI*, `display: standalone`, theme colours, maskable icons), `sw.js` hand-written (small; no Workbox needed initially): caches the app shell + offline page, handles `push` and `notificationclick`.
+- `manifest.webmanifest` (name from appearance settings, default *SOWA*, `display: standalone`, theme colours, maskable icons), `sw.js` hand-written (small; no Workbox needed initially): caches the app shell + offline page, handles `push` and `notificationclick`.
 - Install prompts: Android/desktop via `beforeinstallprompt`; **iOS shows manual instructions** (Share → *Do ekranu początkowego*), because on iPhone Web Push only works for a PWA added to the Home Screen (iOS/iPadOS 16.4+).
 
 ### 6.2 Push
