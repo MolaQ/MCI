@@ -12,6 +12,9 @@ use App\Models\School;
 use App\Models\Task;
 use App\Models\TaxonomyTerm;
 use App\Models\User;
+use App\Models\WorkflowAction;
+use App\Models\WorkflowRequest;
+use App\Models\WorkflowTemplate;
 use App\Support\Appearance;
 use App\Support\CurrentSchool;
 use App\Support\Features;
@@ -55,6 +58,9 @@ class AppServiceProvider extends ServiceProvider
             'event' => Event::class,
             'taxonomy_term' => TaxonomyTerm::class,
             'task' => Task::class,
+            'workflow_template' => WorkflowTemplate::class,
+            'workflow_request' => WorkflowRequest::class,
+            'workflow_action' => WorkflowAction::class,
         ]);
 
         // Site admins and school admins pass every *permission* check (dotted

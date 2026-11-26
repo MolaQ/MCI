@@ -25,6 +25,7 @@ enum Permission: string
     case AuditView = 'audit.view';
     case SettingsManage = 'settings.manage';
     case CategoriesManage = 'categories.manage';
+    case WorkflowsManage = 'workflows.manage';
 
     public function label(): string
     {

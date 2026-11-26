@@ -7,6 +7,7 @@
     @php($user = auth()->user())
     @php($school = app(\App\Support\CurrentSchool::class)->get())
     @php($unreadAnnouncements = $school ? $user->unreadAnnouncementsCount($school->id) : 0)
+    @php($pendingDecisions = $school && app(\App\Support\Features::class)->enabled(\App\Enums\Feature::Workflows) ? \App\Models\WorkflowRequest::query()->awaitingDecisionBy($user)->count() : 0)
     @php($openTasks = $school && app(\App\Support\Features::class)->enabled(\App\Enums\Feature::Tasks) ? \App\Models\Task::query()->assignedTo($user)->where('tasks.school_id', $school->id)->open()->whereNotNull('tasks.due_at')->where('tasks.due_at', '<=', now()->endOfDay())->count() : 0)
 
     <flux:sidebar sticky collapsible="mobile" class="bg-zinc-50 dark:bg-zinc-900 border-e border-zinc-200 dark:border-zinc-700">
@@ -33,6 +34,11 @@
                         {{ __('Zadania') }}
                     </flux:sidebar.item>
                 @endfeature
+                @feature('workflows')
+                    <flux:sidebar.item icon="clipboard-document-check" :href="route('workflows.index')" :current="request()->routeIs('workflows.*')" :badge="$pendingDecisions ?: null" wire:navigate>
+                        {{ __('Obiegi') }}
+                    </flux:sidebar.item>
+                @endfeature
                 @feature('events')
                     <flux:sidebar.item icon="calendar-days" :href="route('events.index')" :current="request()->routeIs('events.*')" wire:navigate>
                         {{ __('Wydarzenia') }}
@@ -49,7 +55,7 @@
             @endif
         </flux:sidebar.nav>
 
-        @if ($school && ($user->can('users.manage') || $user->can('settings.manage') || $user->can('audit.view') || $user->can('categories.manage')))
+        @if ($school && ($user->can('users.manage') || $user->can('settings.manage') || $user->can('audit.view') || $user->can('categories.manage') || $user->can('workflows.manage')))
             <flux:sidebar.nav>
                 <flux:sidebar.group :heading="__('Szkoła :name', ['name' => $school->short_name])" class="grid">
                     @can('users.manage')
@@ -73,6 +79,11 @@
                             {{ __('Kategorie i typy') }}
                         </flux:sidebar.item>
                     @endcan
+                    @if ($user->can('workflows.manage') && app(\App\Support\Features::class)->enabled(\App\Enums\Feature::Workflows))
+                        <flux:sidebar.item icon="clipboard-document-check" :href="route('admin.workflows')" :current="request()->routeIs('admin.workflows*')" wire:navigate>
+                            {{ __('Szablony obiegów') }}
+                        </flux:sidebar.item>
+                    @endif
                     @can('audit.view')
                         <flux:sidebar.item icon="clipboard-document-list" :href="route('admin.audit')" :current="request()->routeIs('admin.audit')" wire:navigate>
                             {{ __('Logi szkoły') }}
@@ -96,6 +107,9 @@
                     </flux:sidebar.item>
                     <flux:sidebar.item icon="tag" :href="route('site.catalog')" :current="request()->routeIs('site.catalog')" wire:navigate>
                         {{ __('Kategorie i typy') }}
+                    </flux:sidebar.item>
+                    <flux:sidebar.item icon="clipboard-document-check" :href="route('site.workflows')" :current="request()->routeIs('site.workflows*')" wire:navigate>
+                        {{ __('Szablony obiegów') }}
                     </flux:sidebar.item>
                     <flux:sidebar.item icon="book-open" :href="route('site.journal')" :current="request()->routeIs('site.journal')" wire:navigate>
                         {{ __('Dziennik witryny') }}

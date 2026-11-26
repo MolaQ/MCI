@@ -35,7 +35,7 @@ class User extends Authenticatable
     use HasFactory, HasPushSubscriptions, HasRoles, Notifiable, SoftDeletes;
 
     /** Push kinds and their defaults (Ustawienia → Powiadomienia). */
-    public const PUSH_KINDS = ['mentions' => true, 'important' => true, 'confirmations' => true, 'tasks' => true, 'announcements' => false];
+    public const PUSH_KINDS = ['mentions' => true, 'important' => true, 'confirmations' => true, 'tasks' => true, 'workflows' => true, 'announcements' => false];
 
     protected $fillable = [
         'first_name',
