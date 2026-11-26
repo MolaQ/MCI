@@ -29,6 +29,8 @@
         <env name="DB_CONNECTION" value="mysql"/>
         <env name="DB_DATABASE" value="mci_test"/>
         <env name="DB_URL" value=""/>
+        <!-- Never follow a demo-mode switch left on in a local install. -->
+        <env name="MCI_DEMO_FLAG" value="storage/framework/testing/demo-mode.json"/>
         <env name="MAIL_MAILER" value="array"/>
         <env name="QUEUE_CONNECTION" value="sync"/>
         <env name="SESSION_DRIVER" value="array"/>

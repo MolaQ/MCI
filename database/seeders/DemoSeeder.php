@@ -3,6 +3,8 @@
 namespace Database\Seeders;
 
 use App\Domain\Communication\Actions\PublishAnnouncement;
+use App\Domain\Projects\Actions\ManageMilestones;
+use App\Domain\Projects\Actions\SaveProject;
 use App\Domain\Tasks\Actions\SaveTask;
 use App\Domain\Workflows\Actions\DecideRequest;
 use App\Domain\Workflows\Actions\ManageTemplates;
@@ -13,25 +15,31 @@ use App\Enums\Role;
 use App\Models\Announcement;
 use App\Models\Event;
 use App\Models\Group;
+use App\Models\Project;
 use App\Models\School;
 use App\Models\Task;
 use App\Models\User;
 use App\Models\WorkflowTemplate;
 use App\Support\CurrentSchool;
+use App\Support\DemoMode;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 /**
  * Local/demo data only: ~70 staff in the first school, plus a small
  * partner school that shares a few teachers (multi-school demo).
- * Run with: php artisan db:seed --class=DemoSeeder
+ * Locally: php artisan db:seed --class=DemoSeeder
+ * On a live server: php artisan mci:demo reset (separate demo database).
  */
 class DemoSeeder extends Seeder
 {
     public function run(): void
     {
-        if (app()->isProduction()) {
-            $this->command?->error('DemoSeeder is disabled in production.');
+        // Production data never gets demo records: on a live server demo data
+        // goes only into the separate demo database (php artisan mci:demo reset).
+        if (app()->isProduction() && DB::getDefaultConnection() !== DemoMode::CONNECTION) {
+            $this->command?->error('DemoSeeder is disabled in production. Use: php artisan mci:demo reset');
 
             return;
         }
@@ -109,6 +117,7 @@ class DemoSeeder extends Seeder
         $this->announcements($school, $coordinators->first(), $teacherUsers, $subjectGroups->first(), $tutors);
         $this->tasks($school, $coordinators->first(), $teacherUsers, $tutors);
         $this->workflows($school, $coordinators->first(), $teacherUsers);
+        $this->projects($school, $partner, $coordinators->first(), $teacherUsers, $teachers);
 
         $this->command?->info('Demo data: 70 staff in '.$school->short_name.', partner school '.$partner->short_name.' with 3 shared teachers.');
     }
@@ -291,5 +300,47 @@ class DemoSeeder extends Seeder
         ], ['group:'.$subject->id]);
 
         app(CurrentSchool::class)->set(null);
+    }
+
+    private function projects(School $school, School $partner, User $coordinator, $teachers, ?Group $teachersGroup): void
+    {
+        if (Project::query()->exists()) {
+            return;
+        }
+        $current = app(CurrentSchool::class);
+        $current->set($school, $coordinator);
+        $save = app(SaveProject::class);
+        $milestones = app(ManageMilestones::class);
+        $admin = User::query()->where('email', config('mci.admin.email'))->first();
+
+        $open = $save->handle($coordinator, $school, [
+            'name' => 'Dzień Otwarty 2027', 'kind' => 'open_day', 'status' => 'in_progress',
+            'starts_on' => now()->toDateString(), 'ends_on' => now()->addWeeks(6)->toDateString(),
+            'coordinator_id' => $coordinator->id,
+            'budget_notes' => "Rada rodziców: 2 000 zł\nSala gimnastyczna i pracownie CNC",
+            'description' => '<p>Pokazy w pracowniach, stoiska kierunków i spotkanie z rodzicami ósmoklasistów.</p>',
+        ], array_values(array_filter([$teachersGroup ? 'group:'.$teachersGroup->id : null, $admin ? 'user:'.$admin->id : null])), [$partner->id]);
+        foreach ([['Plan pokazów w pracowniach', -3, true], ['Zamówienie ulotek i plakatów', 2, false], ['Próba generalna', 30, false], ['Dzień otwarty', 42, false]] as $i => [$title, $days, $done]) {
+            $m = $milestones->save($coordinator, $open, ['title' => $title, 'due_date' => now()->addDays($days)->toDateString(), 'due_time' => $i === 3 ? '10:00' : null]);
+            if ($done) {
+                $milestones->toggle($coordinator, $m);
+            }
+        }
+        $task = app(SaveTask::class)->handle($coordinator, $school, ['title' => 'Przygotować stoisko mechatroniki', 'due_date' => now()->addDays(10)->toDateString()], ['user:'.$teachers->first()->id]);
+        $task->update(['project_id' => $open->id, 'project_milestone_id' => $open->milestones()->skip(2)->first()?->id]);
+
+        $save->handle($coordinator, $school, [
+            'name' => 'Erasmus+ Praktyki w Hiszpanii', 'kind' => 'erasmus', 'status' => 'planned',
+            'starts_on' => now()->addMonths(3)->toDateString(), 'ends_on' => now()->addMonths(9)->toDateString(),
+            'coordinator_id' => $teachers->get(1)?->id ?? $coordinator->id, 'visibility' => 'team',
+            'description' => '<p>Wyjazd 20 uczniów technikum na 4 tygodnie praktyk.</p>',
+        ], ['user:'.$coordinator->id]);
+
+        $save->handle($coordinator, $school, [
+            'name' => 'Modernizacja pracowni CNC', 'kind' => 'investment', 'status' => 'completed',
+            'starts_on' => now()->subMonths(5)->toDateString(), 'ends_on' => now()->subMonth()->toDateString(),
+            'coordinator_id' => $coordinator->id,
+        ]);
+        $current->set(null);
     }
 }

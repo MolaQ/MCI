@@ -3,14 +3,17 @@
 <meta name="csrf-token" content="{{ csrf_token() }}" />
 <meta name="theme-color" content="{{ \App\Support\Appearance::sanitizeHex($appearance->get('primary_color'), '#1d4ed8') }}" />
 <link rel="manifest" href="/manifest.webmanifest" />
-<link rel="apple-touch-icon" href="/pwa/icon-192.png" />
+@php($iconVersion = \App\Http\Controllers\PwaController::version($appearance))
+<link rel="apple-touch-icon" href="/favicon-180.png?v={{ $iconVersion }}" />
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-title" content="{{ $appearance->shortName() }}" />
 
 <title>{{ filled($title ?? null) ? $title.' · '.$appearance->shortName() : $appearance->schoolName() }}</title>
 
-<link rel="icon" href="/favicon.ico" sizes="any" />
+<link rel="icon" href="/favicon.ico?v={{ $iconVersion }}" sizes="48x48" />
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png?v={{ $iconVersion }}" />
+<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png?v={{ $iconVersion }}" />
 
 <style id="mci-theme">{!! $appearance->cssVariables() !!}</style>
 

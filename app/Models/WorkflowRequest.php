@@ -26,7 +26,7 @@ class WorkflowRequest extends Model
     use SoftDeletes;
 
     protected $fillable = [
-        'template_id', 'school_id', 'requester_id', 'title', 'template_name', 'data', 'stages', 'status',
+        'template_id', 'project_id', 'school_id', 'requester_id', 'title', 'template_name', 'data', 'stages', 'status',
         'current_position', 'approver_type', 'approver_id', 'approver_school_id', 'stage_due_at', 'reminded_at',
         'submitted_at', 'completed_at',
     ];
@@ -58,6 +58,11 @@ class WorkflowRequest extends Model
     public function approverSchool(): BelongsTo
     {
         return $this->belongsTo(School::class, 'approver_school_id');
+    }
+
+    public function project(): BelongsTo
+    {
+        return $this->belongsTo(Project::class);
     }
 
     public function requester(): BelongsTo

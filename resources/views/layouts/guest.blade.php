@@ -4,6 +4,7 @@
     @include('partials.head')
 </head>
 <body class="min-h-screen bg-zinc-50 dark:bg-zinc-900 antialiased">
+    @include('partials.demo-banner')
     <div class="flex min-h-screen flex-col items-center justify-center gap-6 p-6">
         <a href="{{ route('login') }}" class="flex flex-col items-center gap-3">
             @if ($appearance->logoUrl())

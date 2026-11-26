@@ -31,3 +31,6 @@ Schedule::command('mci:task-reminders')->everyFifteenMinutes()->withoutOverlappi
 
 // Workflow: approvers past the stage deadline get one reminder a day (Step 6).
 Schedule::command('mci:workflow-reminders')->hourly()->withoutOverlapping();
+
+// Projects: milestone due soon (24 h) and overdue, once per deadline (Step 7).
+Schedule::command('mci:project-reminders')->hourly()->withoutOverlapping();

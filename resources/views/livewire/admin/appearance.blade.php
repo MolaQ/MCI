@@ -13,6 +13,19 @@
                 <x-ui.image-editor model="logo" :label="__('Logo systemu')" :current="$logoUrl" remove="removeLogo"
                                    :presets="['free', '1:1', '3:1', '4:1']" :max-size="1024"
                                    :hint="__('Kadrowanie, obrót i usuwanie tła w edytorze. PNG, JPG, WebP lub GIF; zapisujemy jako WebP z przezroczystością.')" />
+
+                <div class="space-y-3 border-t border-zinc-100 pt-5 dark:border-zinc-700" data-favicon-setting>
+                    <x-ui.image-editor model="favicon" :label="__('Ikona strony (favicon)')" :current="$faviconUrl ?? '/favicon-180.png?v='.$iconVersion" :remove="$faviconUrl ? 'removeFavicon' : null"
+                                       aspect="1:1" :presets="['1:1']" :shapes="['square', 'circle']" :max-size="512"
+                                       :hint="__('Kwadrat lub koło, z przezroczystością. Generujemy z niej favicon.ico, ikony PNG 16–180 px oraz ikony aplikacji (PWA). Bez własnej ikony używamy domyślnej: pierwsza litera nazwy na kolorze głównym.')" />
+                    <div class="flex items-center gap-3 text-xs text-zinc-500">
+                        <span>{{ __('Podgląd:') }}</span>
+                        <img src="/favicon-16.png?v={{ $iconVersion }}" alt="16 px" width="16" height="16" />
+                        <img src="/favicon-32.png?v={{ $iconVersion }}" alt="32 px" width="32" height="32" />
+                        <img src="/favicon-48.png?v={{ $iconVersion }}" alt="48 px" width="48" height="48" />
+                        <img src="/pwa/icon-192.png?v={{ $iconVersion }}" alt="192 px" width="48" height="48" class="rounded-mci" />
+                    </div>
+                </div>
             </flux:card>
 
             <flux:card class="space-y-5">
@@ -31,7 +44,7 @@
                 </div>
 
                 <div class="grid gap-4 sm:grid-cols-2">
-                    <flux:radio.group wire:model.live="radius" :label="__('Zaokrąglenie')" variant="segmented">
+                    <flux:radio.group wire:model.live="radius" :label="__('Zaokrąglenie')" variant="segmented" size="sm">
                         @foreach ($radii as $key => $value)
                             <flux:radio :value="$key" :label="__('radius.'.$key)" />
                         @endforeach

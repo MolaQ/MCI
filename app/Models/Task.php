@@ -30,7 +30,7 @@ class Task extends Model
     use HasFactory, SoftDeletes;
 
     protected $fillable = [
-        'school_id', 'event_id', 'workflow_request_id', 'created_by', 'title', 'description', 'is_personal', 'priority', 'status',
+        'school_id', 'event_id', 'workflow_request_id', 'project_id', 'project_milestone_id', 'created_by', 'title', 'description', 'is_personal', 'priority', 'status',
         'due_at', 'all_day', 'remind_before_minutes', 'completed_at', 'completed_by', 'position',
     ];
 
@@ -55,6 +55,16 @@ class Task extends Model
     public function creator(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');
+    }
+
+    public function project(): BelongsTo
+    {
+        return $this->belongsTo(Project::class);
+    }
+
+    public function milestone(): BelongsTo
+    {
+        return $this->belongsTo(ProjectMilestone::class, 'project_milestone_id');
     }
 
     public function completer(): BelongsTo

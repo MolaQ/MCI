@@ -8,6 +8,8 @@ use App\Models\Announcement;
 use App\Models\Event;
 use App\Models\Group;
 use App\Models\Invite;
+use App\Models\Project;
+use App\Models\ProjectMilestone;
 use App\Models\School;
 use App\Models\Task;
 use App\Models\TaxonomyTerm;
@@ -17,6 +19,7 @@ use App\Models\WorkflowRequest;
 use App\Models\WorkflowTemplate;
 use App\Support\Appearance;
 use App\Support\CurrentSchool;
+use App\Support\DemoMode;
 use App\Support\Features;
 use App\Support\Push;
 use App\Support\Settings;
@@ -38,6 +41,9 @@ class AppServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
+        // Before anything touches the database: demo connection and switch.
+        DemoMode::boot();
+
         $this->app->singleton(Settings::class);
         $this->app->singleton(Appearance::class);
         $this->app->scoped(Features::class);
@@ -61,6 +67,8 @@ class AppServiceProvider extends ServiceProvider
             'workflow_template' => WorkflowTemplate::class,
             'workflow_request' => WorkflowRequest::class,
             'workflow_action' => WorkflowAction::class,
+            'project' => Project::class,
+            'project_milestone' => ProjectMilestone::class,
         ]);
 
         // Site admins and school admins pass every *permission* check (dotted

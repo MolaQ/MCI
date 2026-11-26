@@ -3,6 +3,7 @@
 namespace App\Livewire\Admin;
 
 use App\Domain\Media\Actions\StoreImage;
+use App\Http\Controllers\PwaController;
 use App\Livewire\Concerns\WithImageUploads;
 use App\Models\Media;
 use App\Support\Appearance as AppearanceService;
@@ -43,12 +44,17 @@ class Appearance extends Component
     #[Locked]
     public ?int $logo_media_id = null;
 
+    public $favicon;
+
+    #[Locked]
+    public ?int $favicon_media_id = null;
+
     public function mount(AppearanceService $appearance): void
     {
         $this->authorize('site-admin');
 
         $this->fill(collect($appearance->all())->only([
-            'school_name', 'short_name', 'primary_color', 'primary_foreground', 'danger_color', 'radius', 'default_theme', 'logo_path', 'logo_media_id',
+            'school_name', 'short_name', 'primary_color', 'primary_foreground', 'danger_color', 'radius', 'default_theme', 'logo_path', 'logo_media_id', 'favicon_media_id',
         ])->all());
     }
 
@@ -65,6 +71,7 @@ class Appearance extends Component
             'radius' => ['required', Rule::in(array_keys(AppearanceService::RADII))],
             'default_theme' => ['required', Rule::in(AppearanceService::THEMES)],
             'logo' => $this->imageUploadRule(),
+            'favicon' => $this->imageUploadRule(),
         ];
     }
 
@@ -73,11 +80,16 @@ class Appearance extends Component
         $this->validateOnly('logo');
     }
 
+    public function updatedFavicon(): void
+    {
+        $this->validateOnly('favicon');
+    }
+
     public function save(Settings $settings, StoreImage $store)
     {
         $this->authorize('site-admin');
         $data = $this->validate();
-        unset($data['logo']);
+        unset($data['logo'], $data['favicon']);
 
         $previous = $this->currentLogo();
         if ($this->logo) {
@@ -86,14 +98,24 @@ class Appearance extends Component
             $this->logo_path = null;
         }
 
+        $previousFavicon = $this->favicon_media_id ? Media::query()->find($this->favicon_media_id) : null;
+        if ($this->favicon) {
+            // Square or circle from the editor, transparency kept; icons are rendered from it on demand.
+            $this->favicon_media_id = $store->handle($this->favicon, 'favicon', null, Auth::user(), public: true, field: 'favicon')->id;
+        }
+
         $data['logo_path'] = $this->logo_path;
         $data['logo_media_id'] = $this->logo_media_id;
+        $data['favicon_media_id'] = $this->favicon_media_id;
         $settings->set('appearance', $data);
 
         if ($this->logo) {
             $this->discardLegacyLogo($previous);
         }
-        Audit::site('settings.appearance_updated', null, ['keys' => array_keys($data), 'logo_changed' => (bool) $this->logo]);
+        if ($this->favicon) {
+            $previousFavicon?->purge();
+        }
+        Audit::site('settings.appearance_updated', null, ['keys' => array_keys($data), 'logo_changed' => (bool) $this->logo, 'favicon_changed' => (bool) $this->favicon]);
 
         Flux::toast(variant: 'success', text: __('Zapisano wygląd.'));
 
@@ -113,6 +135,20 @@ class Appearance extends Component
         Audit::site('settings.logo_removed');
 
         Flux::toast(text: __('Usunięto logo.'));
+    }
+
+    /** Back to the default SOWA favicon (theme colour + first letter). */
+    public function removeFavicon(Settings $settings): void
+    {
+        $this->authorize('site-admin');
+
+        $previous = $this->favicon_media_id ? Media::query()->find($this->favicon_media_id) : null;
+        $this->favicon_media_id = null;
+        $settings->set('appearance', array_merge((array) $settings->get('appearance', []), ['favicon_media_id' => null]));
+        $previous?->purge();
+        Audit::site('settings.favicon_removed');
+
+        Flux::toast(text: __('Przywrócono domyślną ikonę.'));
     }
 
     /**
@@ -138,7 +174,7 @@ class Appearance extends Component
     public function resetDefaults(Settings $settings)
     {
         $this->authorize('site-admin');
-        $settings->set('appearance', ['logo_path' => $this->logo_path, 'logo_media_id' => $this->logo_media_id]);
+        $settings->set('appearance', ['logo_path' => $this->logo_path, 'logo_media_id' => $this->logo_media_id, 'favicon_media_id' => $this->favicon_media_id]);
         Audit::site('settings.appearance_reset');
 
         return $this->redirectRoute('site.appearance');
@@ -148,6 +184,8 @@ class Appearance extends Component
     {
         return view('livewire.admin.appearance', [
             'logoUrl' => app(AppearanceService::class)->logoUrl(),
+            'faviconUrl' => $this->favicon_media_id ? Media::query()->find($this->favicon_media_id)?->url() : null,
+            'iconVersion' => PwaController::version(app(AppearanceService::class)),
             'radii' => AppearanceService::RADII,
             'themes' => AppearanceService::THEMES,
         ]);

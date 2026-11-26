@@ -20,7 +20,8 @@
             @forelse ($this->latest as $n)
                 <button type="button" wire:key="n-{{ $n->id }}" wire:click="open('{{ $n->id }}')"
                         @class(['flex w-full gap-3 rounded-mci p-2 text-start transition-colors hover:bg-zinc-50 dark:hover:bg-zinc-700/60', 'bg-primary/5' => ! $n->read_at])>
-                    <flux:icon :name="data_get($n->data, 'kind') === 'mention' ? 'at-symbol' : 'megaphone'" variant="mini" class="mt-0.5 shrink-0 text-zinc-400" />
+                    @php($kind = (string) data_get($n->data, 'kind'))
+                    <flux:icon :name="match (true) { $kind === 'mention' || str_ends_with($kind, '_mention') => 'at-symbol', str_starts_with($kind, 'task_') => 'check-circle', str_starts_with($kind, 'workflow_') => 'clipboard-document-check', str_starts_with($kind, 'project_') => 'rectangle-stack', default => 'megaphone' }" variant="mini" class="mt-0.5 shrink-0 text-zinc-400" />
                     <span class="min-w-0 flex-1">
                         <span class="block text-sm font-medium text-zinc-800 dark:text-zinc-100">{{ data_get($n->data, 'title') }}</span>
                         <span class="block truncate text-sm text-zinc-500">{{ data_get($n->data, 'body') }}</span>

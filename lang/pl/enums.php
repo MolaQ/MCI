@@ -66,6 +66,7 @@ return [
         'settings_manage' => 'Ustawienia systemu i wygląd',
         'categories_manage' => 'Kategorie wydarzeń i typy grup',
         'workflows_manage' => 'Szablony obiegów i wniosków',
+        'projects_manage' => 'Zarządzanie wszystkimi projektami szkoły',
     ],
 
     'workflow_status' => [
@@ -139,4 +140,20 @@ return [
         'inne' => 'Inne',
     ],
 
+    'project_status' => [
+        'planned' => 'Planowany',
+        'in_progress' => 'W toku',
+        'on_hold' => 'Wstrzymany',
+        'completed' => 'Zakończony',
+        'cancelled' => 'Anulowany',
+    ],
+    'project_kind' => [
+        'event' => 'Wydarzenie szkolne',
+        'open_day' => 'Dzień otwarty',
+        'competition' => 'Konkurs',
+        'grant' => 'Grant',
+        'erasmus' => 'Erasmus+',
+        'investment' => 'Inwestycja',
+        'other' => 'Inny',
+    ],
 ];

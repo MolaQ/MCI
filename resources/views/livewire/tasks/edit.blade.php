@@ -5,6 +5,13 @@
         </x-slot:actions>
     </x-ui.page-header>
 
+    @if ($this->linkProject)
+        <div class="flex items-center gap-2 rounded-mci border border-primary/30 bg-primary/5 px-4 py-2.5 text-sm" data-link-project>
+            <flux:icon name="rectangle-stack" variant="mini" class="text-primary" />
+            {{ __('Zadanie trafi do projektu :name. Przydziel je komuś — zadania osobiste nie należą do projektów.', ['name' => $this->linkProject->name]) }}
+        </div>
+    @endif
+
     <form wire:submit="save" class="grid gap-6 lg:grid-cols-3">
         <div class="space-y-6 lg:col-span-2">
             <flux:card class="space-y-5">

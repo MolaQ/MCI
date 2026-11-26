@@ -90,6 +90,7 @@ return [
         'default_theme' => 'system',
         'logo_path' => null,
         'logo_media_id' => null,
+        'favicon_media_id' => null,
     ],
 
     /*
@@ -106,6 +107,7 @@ return [
         'max_post_images' => 6,
         'collections' => [
             'logo' => 1024,
+            'favicon' => 512,
             'cover' => 2000,
             'image' => 2000,
         ],
@@ -116,6 +118,20 @@ return [
     | tasks with an hour and for all-day tasks; overdue reminders are sent
     | once a day, only between these hours (Europe/Warsaw).
     */
+    /*
+    | Demo mode (site admin → Tryb demo). Demo data lives in a separate
+    | database (connection "demo"), never in the production one; a flag file
+    | outside both databases switches the whole site. The demo database name
+    | must differ from the main one and contain "demo".
+    */
+    'demo' => [
+        'main_connection' => env('DB_CONNECTION', 'mysql'),
+        'database' => env('DB_DEMO_DATABASE'),
+        'flag' => env('MCI_DEMO_FLAG', storage_path('app/demo-mode.json')),
+        'admin_email' => env('MCI_DEMO_ADMIN_EMAIL', 'demo@example.edu.pl'),
+        'admin_password' => env('MCI_DEMO_ADMIN_PASSWORD', 'demo12345'),
+    ],
+
     'tasks' => [
         'remind_before_minutes' => (int) env('MCI_TASK_REMIND_MINUTES', 60),
         'remind_before_minutes_all_day' => (int) env('MCI_TASK_REMIND_MINUTES_ALL_DAY', 24 * 60),

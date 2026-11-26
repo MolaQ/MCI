@@ -20,6 +20,12 @@ class PwaController
 {
     public const ICON_SIZES = [192, 512];
 
+    /** PNG favicons linked from <head>; 180 is the Apple touch icon. */
+    public const FAVICON_SIZES = [16, 32, 48, 180];
+
+    /** Sizes packed into /favicon.ico. */
+    public const ICO_SIZES = [16, 32, 48];
+
     public function __construct(private Appearance $appearance) {}
 
     public function manifest(): JsonResponse
@@ -56,16 +62,63 @@ class PwaController
     {
         abort_unless(in_array($size, [...self::ICON_SIZES, 96], true) && in_array($variant, ['any', 'maskable', 'badge'], true), 404);
 
+        return $this->pngResponse($this->cached($size, $variant));
+    }
+
+    /** PNG favicon (16/32/48) and Apple touch icon (180). */
+    public function favicon(int $size): Response
+    {
+        abort_unless(in_array($size, self::FAVICON_SIZES, true), 404);
+
+        return $this->pngResponse($this->cached($size, $size >= 180 ? 'touch' : 'favicon'));
+    }
+
+    /** /favicon.ico: PNG-compressed entries (16, 32, 48), valid in every current browser. */
+    public function faviconIco(): Response
+    {
+        $images = array_map(fn (int $size) => File::get($this->cached($size, 'favicon')), self::ICO_SIZES);
+
+        $header = pack('vvv', 0, 1, count($images));
+        $directory = '';
+        $offset = 6 + 16 * count($images);
+        foreach (self::ICO_SIZES as $i => $size) {
+            $directory .= pack('CCCCvvVV', $size, $size, 0, 0, 1, 32, strlen($images[$i]), $offset);
+            $offset += strlen($images[$i]);
+        }
+
+        return response($header.$directory.implode('', $images), 200, [
+            'Content-Type' => 'image/x-icon',
+            'Cache-Control' => 'public, max-age=86400',
+        ]);
+    }
+
+    /** Version string for <head> links, so browsers fetch a new favicon after a change. */
+    public static function version(Appearance $appearance): string
+    {
+        return substr(md5(implode('|', [$appearance->get('favicon_media_id'), $appearance->get('logo_media_id'), $appearance->get('primary_color'), $appearance->shortName()])), 0, 8);
+    }
+
+    /** Render once per look (favicon, logo, colour, name) and keep the file. */
+    private function cached(int $size, string $variant): string
+    {
         $color = Appearance::sanitizeHex($this->appearance->get('primary_color'), '#1d4ed8');
         $logoId = (int) $this->appearance->get('logo_media_id');
-        $key = md5(implode('|', [$size, $variant, $color, $logoId, $this->appearance->shortName(), 2]));
+        $faviconId = (int) $this->appearance->get('favicon_media_id');
+        $key = md5(implode('|', [$size, $variant, $color, $logoId, $faviconId, $this->appearance->shortName(), 3]));
         $path = storage_path("app/pwa/{$key}.png");
 
         if (! File::exists($path)) {
             File::ensureDirectoryExists(dirname($path));
-            File::put($path, $this->render($size, $variant, $color, $logoId ? Media::query()->find($logoId) : null));
+            File::put($path, $this->render($size, $variant, $color,
+                $logoId ? Media::query()->find($logoId) : null,
+                $faviconId ? Media::query()->find($faviconId) : null));
         }
 
+        return $path;
+    }
+
+    private function pngResponse(string $path): Response
+    {
         return response(File::get($path), 200, [
             'Content-Type' => 'image/png',
             'Cache-Control' => 'public, max-age=86400',
@@ -95,7 +148,7 @@ class PwaController
         return view('pwa.offline');
     }
 
-    private function render(int $size, string $variant, string $color, ?Media $logo): string
+    private function render(int $size, string $variant, string $color, ?Media $logo, ?Media $favicon = null): string
     {
         $img = imagecreatetruecolor($size, $size);
         imagealphablending($img, true);
@@ -112,19 +165,41 @@ class PwaController
         }
 
         [$r, $g, $b] = sscanf($color, '#%02x%02x%02x');
-        $logoImage = $logo && Storage::disk('media')->exists($logo->path)
-            ? @imagecreatefromstring(Storage::disk('media')->get($logo->path)) : null;
+        $faviconImage = $this->image($favicon);
+
+        if ($faviconImage instanceof GdImage) {
+            // The favicon from Wygląd: its own shape and transparency are kept.
+            // Maskable/touch icons need a full background, so they sit on white.
+            $full = in_array($variant, ['any', 'favicon'], true);
+            imagealphablending($img, false);
+            imagefill($img, 0, 0, $full ? imagecolorallocatealpha($img, 0, 0, 0, 127) : imagecolorallocate($img, 255, 255, 255));
+            imagealphablending($img, true);
+            $box = (int) round($size * match ($variant) {
+                'maskable' => 0.7, 'touch' => 0.86, default => 1.0
+            });
+            $this->paste($img, $faviconImage, $size, $box);
+
+            return $this->png($img);
+        }
+
+        $logoImage = $this->image($logo);
+
+        if ($variant === 'favicon') {
+            // Default favicon: rounded square in the theme colour with the first letter.
+            imagealphablending($img, false);
+            imagefill($img, 0, 0, imagecolorallocatealpha($img, 0, 0, 0, 127));
+            imagealphablending($img, true);
+            $this->roundedSquare($img, $size, imagecolorallocate($img, $r, $g, $b));
+            $this->letters($img, $size, imagecolorallocate($img, 255, 255, 255), 0.62, 1);
+
+            return $this->png($img);
+        }
 
         if ($logoImage instanceof GdImage) {
             // Logo centred on white; maskable icons keep the 80 % safe zone.
             imagefill($img, 0, 0, imagecolorallocate($img, 255, 255, 255));
             $box = (int) round($size * ($variant === 'maskable' ? 0.62 : 0.84));
-            $w = imagesx($logoImage);
-            $h = imagesy($logoImage);
-            $scale = min($box / $w, $box / $h);
-            $nw = (int) round($w * $scale);
-            $nh = (int) round($h * $scale);
-            imagecopyresampled($img, $logoImage, (int) (($size - $nw) / 2), (int) (($size - $nh) / 2), 0, 0, $nw, $nh, $w, $h);
+            $this->paste($img, $logoImage, $size, $box);
         } else {
             imagefill($img, 0, 0, imagecolorallocate($img, $r, $g, $b));
             $this->letters($img, $size, imagecolorallocate($img, 255, 255, 255), $variant === 'maskable' ? 0.34 : 0.42);
@@ -133,10 +208,41 @@ class PwaController
         return $this->png($img);
     }
 
-    /** Short name (max 4 letters), with the bundled DejaVu font when FreeType is there. */
-    private function letters(GdImage $img, int $size, int $colour, float $height): void
+    private function image(?Media $media): ?GdImage
     {
-        $text = mb_strtoupper(mb_substr($this->appearance->shortName() ?: 'SOWA', 0, 4));
+        if (! $media || ! Storage::disk('media')->exists($media->path)) {
+            return null;
+        }
+        $image = @imagecreatefromstring(Storage::disk('media')->get($media->path));
+
+        return $image instanceof GdImage ? $image : null;
+    }
+
+    /** Fit $source into a centred $box × $box square of $img. */
+    private function paste(GdImage $img, GdImage $source, int $size, int $box): void
+    {
+        $w = imagesx($source);
+        $h = imagesy($source);
+        $scale = min($box / $w, $box / $h);
+        $nw = max(1, (int) round($w * $scale));
+        $nh = max(1, (int) round($h * $scale));
+        imagecopyresampled($img, $source, (int) (($size - $nw) / 2), (int) (($size - $nh) / 2), 0, 0, $nw, $nh, $w, $h);
+    }
+
+    private function roundedSquare(GdImage $img, int $size, int $colour): void
+    {
+        $r = max(2, (int) round($size * 0.22));
+        imagefilledrectangle($img, $r, 0, $size - 1 - $r, $size - 1, $colour);
+        imagefilledrectangle($img, 0, $r, $size - 1, $size - 1 - $r, $colour);
+        foreach ([[$r, $r], [$size - 1 - $r, $r], [$r, $size - 1 - $r], [$size - 1 - $r, $size - 1 - $r]] as [$x, $y]) {
+            imagefilledellipse($img, $x, $y, $r * 2, $r * 2, $colour);
+        }
+    }
+
+    /** Short name (max 4 letters), with the bundled DejaVu font when FreeType is there. */
+    private function letters(GdImage $img, int $size, int $colour, float $height, int $max = 4): void
+    {
+        $text = mb_strtoupper(mb_substr($this->appearance->shortName() ?: 'SOWA', 0, $max));
         $ttf = resource_path('fonts/DejaVuSans-Bold.ttf');
 
         if (function_exists('imagettftext') && is_file($ttf)) {
