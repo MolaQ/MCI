@@ -23,7 +23,7 @@ class PublicContentController
     {
         $model = Event::query()->publiclyVisible()->with('school:id,name,short_name,slug,color,logo_media_id,address,city')->findOrFail($event);
 
-        return view('public.event', ['event' => $model]);
+        return view('public.event', ['event' => $model, 'more' => $this->moreFrom($model->school_id, event: $model->id)]);
     }
 
     public function ics(int $event): Response
@@ -88,6 +88,27 @@ class PublicContentController
         $model = Announcement::query()->publiclyVisible()->with('school:id,name,short_name,slug,color,logo_media_id')
             ->findOrFail($announcement, ['id', 'school_id', 'title', 'body', 'priority', 'published_at']);
 
-        return view('public.announcement', ['announcement' => $model, 'body' => Mentions::forPublic($model->body)]);
+        return view('public.announcement', [
+            'announcement' => $model,
+            'body' => Mentions::forPublic($model->body),
+            'more' => $this->moreFrom($model->school_id, announcement: $model->id),
+        ]);
+    }
+
+    /**
+     * Side column of a detail page: other public items of the same school.
+     *
+     * @return array{announcements: Collection<int, Announcement>, events: Collection<int, Event>}
+     */
+    private function moreFrom(int $schoolId, ?int $announcement = null, ?int $event = null): array
+    {
+        return [
+            'announcements' => Announcement::query()->publiclyVisible()->where('announcements.school_id', $schoolId)
+                ->when($announcement, fn ($q) => $q->whereKeyNot($announcement))
+                ->latest('published_at')->limit(4)->get(['id', 'school_id', 'title', 'published_at']),
+            'events' => Event::query()->publiclyVisible()->where('events.school_id', $schoolId)
+                ->when($event, fn ($q) => $q->where('events.id', '!=', $event))
+                ->upcoming()->orderBy('events.starts_at')->limit(4)->get(),
+        ];
     }
 }

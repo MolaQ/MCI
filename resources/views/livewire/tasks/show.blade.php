@@ -1,6 +1,6 @@
 @php($t = $this->task)
 @php($progress = $t->checklistProgress())
-<div class="mx-auto max-w-5xl space-y-6">
+<div class="space-y-6">
     <div class="flex flex-wrap items-center justify-between gap-2">
         <flux:button :href="route('tasks.index')" wire:navigate variant="ghost" size="sm" icon="arrow-left">{{ __('Zadania') }}</flux:button>
         @if ($canEdit)
@@ -11,8 +11,8 @@
         @endif
     </div>
 
-    <div class="grid gap-6 lg:grid-cols-3">
-        <article class="space-y-5 lg:col-span-2">
+    <div class="grid gap-6 lg:grid-cols-3 2xl:grid-cols-4">
+        <article class="min-w-0 space-y-5 lg:col-span-2 2xl:col-span-3">
             <flux:card class="space-y-5">
                 <header class="space-y-3">
                     <div class="flex flex-wrap items-center gap-2">

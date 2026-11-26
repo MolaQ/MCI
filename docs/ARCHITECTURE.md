@@ -75,7 +75,7 @@ flowchart LR
 | Real-time | `BROADCAST_CONNECTION=null` + `wire:poll` (baseline) or `reverb` (VPS) | Alert ack board polls every 3 s in baseline mode; pushes instantly with Reverb. |
 | QR codes | `simplesoftwareio/simple-qrcode` (or `bacon/bacon-qr-code`) | For invite links, printable PDF/PNG. |
 | Audit | own `audit_logs` table (`App\Support\Audit::log()`) | Accounts, access, groups, settings now; alerts later. |
-| Tests / quality | Pest, Laravel Pint, GitHub Actions CI on SQLite **and MySQL 8** | Larastan can be added later. |
+| Tests / quality | Pest, Laravel Pint, GitHub Actions CI on **MySQL 8** (tests run on MySQL/MariaDB only, database `mci_test`) | Larastan can be added later. |
 
 ### 2.2 Deployment profiles
 

@@ -51,7 +51,7 @@ it('blocks invited accounts that have no password yet', function () {
 
 it('logs out a user who is suspended during an open session', function () {
     $user = User::factory()->create();
-    $this->actingAs($user)->get('/')->assertOk();
+    $this->actingAs($user)->get('/')->assertRedirect(route('dashboard'));
 
     $user->update(['status' => UserStatus::Suspended]);
 

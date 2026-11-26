@@ -8,10 +8,6 @@ on:
 jobs:
   tests:
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        database: [sqlite, mysql]
 
     services:
       mysql:
@@ -32,7 +28,7 @@ jobs:
       - uses: shivammathur/setup-php@v2
         with:
           php-version: '8.3'
-          extensions: mbstring, intl, pdo_mysql, pdo_sqlite, gd, zip
+          extensions: mbstring, intl, pdo_mysql, gd, zip
           coverage: none
 
       - uses: actions/setup-node@v4
@@ -52,20 +48,12 @@ jobs:
           php artisan key:generate
 
       - name: Code style (Pint)
-        if: matrix.database == 'sqlite'
         run: vendor/bin/pint --test
 
-      - name: Tests (SQLite)
-        if: matrix.database == 'sqlite'
-        run: php artisan test
-
       - name: Tests (MySQL 8)
-        if: matrix.database == 'mysql'
         env:
-          DB_CONNECTION: mysql
           DB_HOST: 127.0.0.1
           DB_PORT: 3306
-          DB_DATABASE: mci_test
           DB_USERNAME: mci
           DB_PASSWORD: mci
         run: php artisan test

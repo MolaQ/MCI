@@ -1,11 +1,11 @@
 @php($a = $this->announcement)
-<div class="mx-auto max-w-5xl space-y-6">
+<div class="space-y-6">
     <div>
         <flux:button :href="route('communication.index')" wire:navigate variant="ghost" size="sm" icon="arrow-left">{{ __('Komunikaty') }}</flux:button>
     </div>
 
-    <div class="grid gap-6 lg:grid-cols-3">
-        <article @class(['space-y-5', 'lg:col-span-2' => $this->stats, 'lg:col-span-3' => ! $this->stats])>
+    <div class="grid gap-6 lg:grid-cols-3 2xl:grid-cols-4">
+        <article @class(['space-y-5', 'min-w-0', 'lg:col-span-2 2xl:col-span-3' => $this->stats, 'lg:col-span-3 2xl:col-span-4' => ! $this->stats])>
             <flux:card class="space-y-5">
                 <header class="space-y-3">
                     <div class="flex flex-wrap items-center gap-2">

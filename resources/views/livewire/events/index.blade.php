@@ -1,7 +1,7 @@
 <div class="space-y-6">
     <x-ui.page-header :title="__('Wydarzenia')" :subtitle="__('Wydarzenia Twojej szkoły, międzyszkolne i publiczne.')">
         <x-slot:actions>
-            <flux:button :href="route('home')" variant="ghost" icon="globe-alt">{{ __('Strona publiczna') }}</flux:button>
+            <flux:button :href="route('home', ['podglad' => 1])" variant="ghost" icon="globe-alt">{{ __('Strona publiczna') }}</flux:button>
             @if ($canCreate)
                 <flux:button :href="route('events.create')" wire:navigate variant="primary" icon="plus">{{ __('Nowe wydarzenie') }}</flux:button>
             @endif
@@ -26,7 +26,7 @@
         </div>
     </div>
 
-    <div class="grid gap-3 md:grid-cols-2">
+    <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
         @forelse ($this->events as $event)
             <x-event-card :event="$event" :href="route('events.show', $event)" wire:navigate wire:key="e-{{ $event->id }}" />
         @empty

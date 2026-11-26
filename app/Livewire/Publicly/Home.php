@@ -22,10 +22,14 @@ use Livewire\Attributes\Url;
 use Livewire\Component;
 
 /**
- * Public front (no login), an information centre: identity + live summary,
- * one row of filters (school, category, time), a featured grid of public
- * events and announcements, and the school directory with a quick preview.
+ * Public front for guests, an information centre: identity + live summary,
+ * one row of filters (school, category, time), public announcements first,
+ * then a grid of public events and the school directory with a preview.
+ * With a single school the front is that school's page from the start.
  * Every query goes through a "publiclyVisible"/"publiclyListed" scope.
+ *
+ * Signed-in people are sent to their dashboard (internal content first);
+ * `?podglad=1` keeps the public preview available to them.
  */
 #[Layout('layouts::public')]
 #[Title('Portal szkół')]
@@ -102,9 +106,22 @@ class Home extends Component
             ->get(['id', 'name', 'short_name', 'slug', 'city', 'tagline', 'color', 'logo_path', 'logo_media_id']);
     }
 
+    /** The only listed school, when there is exactly one: it is selected by default. */
+    #[Computed]
+    public function soleSchool(): ?School
+    {
+        return $this->schools->count() === 1 ? $this->schools->first() : null;
+    }
+
     private function schoolId(): ?int
     {
-        return $this->schools->firstWhere('slug', $this->school)?->id;
+        return $this->schools->firstWhere('slug', $this->school)?->id ?? $this->soleSchool?->id;
+    }
+
+    /** Link to the public front that does not bounce signed-in people to their dashboard. */
+    public static function url(?string $fragment = null): string
+    {
+        return route('home', auth()->check() ? ['podglad' => 1] : []).($fragment ? '#'.$fragment : '');
     }
 
     /** Public, upcoming events in the chosen school and time frame (category applied separately). */
@@ -161,7 +178,7 @@ class Home extends Component
             ->when($schoolId, fn ($q) => $q->where('announcements.school_id', $schoolId))
             ->orderByRaw('case when pinned_until is not null and pinned_until > ? then 0 else 1 end', [now()])
             ->latest('published_at')
-            ->limit(4)
+            ->limit($this->soleSchool ? 8 : 4)
             ->get(['id', 'school_id', 'title', 'body', 'priority', 'published_at', 'pinned_until']);
     }
 
@@ -178,6 +195,21 @@ class Home extends Component
             'week' => $public()->whereBetween('events.starts_at', [now()->startOfDay(), now()->addDays(7)->endOfDay()])->count(),
             'announcements' => Announcement::query()->publiclyVisible()->toBase()->count(),
         ];
+    }
+
+    /**
+     * The light "educational offer" block: offers of the selected school,
+     * shown only when the school (or the whole site) has the feature on.
+     */
+    #[Computed]
+    public function offers(): Collection
+    {
+        $school = $this->schools->firstWhere('id', $this->schoolId());
+        if (! $school || app(Features::class)->disabled(Feature::PublicOffers, $school)) {
+            return collect();
+        }
+
+        return $school->offers()->where('is_active', true)->orderBy('position')->limit(12)->get(['id', 'school_id', 'kind', 'name']);
     }
 
     #[Computed]
@@ -215,6 +247,14 @@ class Home extends Component
         // Portal switched off for the whole site: send people where they can go.
         if (app(Features::class)->disabled(Feature::PublicFront, null)) {
             $this->redirectRoute(auth()->check() ? 'dashboard' : 'login');
+
+            return;
+        }
+        // Signed in: internal content of their school comes first.
+        if (auth()->check() && ! request()->boolean('podglad')) {
+            $this->redirectRoute('dashboard');
+
+            return;
         }
         if (! array_key_exists($this->when, self::timeframes())) {
             $this->when = 'upcoming';
@@ -239,6 +279,7 @@ class Home extends Component
             'hasMore' => $events->count() > $this->limit,
             'filtered' => $this->school !== '' || $this->category !== '' || $this->when !== 'upcoming',
             'schoolLabel' => $this->schools->firstWhere('slug', $this->school)?->short_name,
+            'focus' => $this->schools->firstWhere('id', $this->schoolId()),
             'categoryLabel' => $activeCategory?->label(),
             'invites' => app(Features::class)->enabled(Feature::Invites, null),
             'tv' => app(Features::class)->enabled(Feature::TvMode, null),

@@ -1,4 +1,4 @@
-<div x-data="mciFullscreen" x-on:keydown.escape.window="if (! active) window.location = @js(route('home'))"
+<div x-data="mciFullscreen" x-on:keydown.escape.window="if (! active) window.location = @js(\App\Livewire\Publicly\Home::url())"
      x-on:keydown.f.window="toggle()" class="flex h-full flex-col gap-6 p-6 lg:p-10" wire:poll.{{ $pollSeconds }}s>
     <header class="flex items-center justify-between gap-6">
         <div class="flex items-center gap-4">
@@ -22,7 +22,7 @@
                     <flux:icon x-show="! active" name="arrows-pointing-out" />
                     <flux:icon x-show="active" x-cloak name="arrows-pointing-in" />
                 </button>
-                <a href="{{ route('home') }}" class="flex size-11 items-center justify-center rounded-mci bg-white/10 text-white transition hover:bg-white/20" aria-label="{{ __('Zamknij tryb TV') }}" title="{{ __('Zamknij (Esc)') }}">
+                <a href="{{ \App\Livewire\Publicly\Home::url() }}" class="flex size-11 items-center justify-center rounded-mci bg-white/10 text-white transition hover:bg-white/20" aria-label="{{ __('Zamknij tryb TV') }}" title="{{ __('Zamknij (Esc)') }}">
                     <flux:icon name="x-mark" />
                 </a>
             </div>
