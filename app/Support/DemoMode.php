@@ -118,6 +118,7 @@ class DemoMode
         DB::purge(self::CONNECTION);
 
         try {
+            self::ensureDatabase($config);
             DB::connection(self::CONNECTION)->getPdo();
         } catch (\Throwable $e) {
             throw new RuntimeException(__('Nie można połączyć się z bazą demo „:name”. Utwórz ją w panelu hostingu (z tymi samymi danymi logowania co baza główna) albo ustaw DB_DEMO_DATABASE.', ['name' => self::databaseName()]), 0, $e);
@@ -134,6 +135,32 @@ class DemoMode
         File::deleteDirectory(storage_path('app/demo/media'));
 
         self::journal('demo.reset', $actor);
+    }
+
+    /**
+     * MySQL / MariaDB: creates the demo database when it is missing and the
+     * main database user may do so (XAMPP root, a VPS). On shared hosting
+     * without that right it fails and the caller explains what to do.
+     * The name has passed assertSafe() (differs from main, contains "demo").
+     */
+    private static function ensureDatabase(array $config): void
+    {
+        if (! in_array($config['driver'] ?? null, ['mysql', 'mariadb'], true)) {
+            return;
+        }
+        try {
+            DB::connection(self::CONNECTION)->getPdo();
+
+            return;
+        } catch (\Throwable) {
+            DB::purge(self::CONNECTION);
+        }
+
+        $name = str_replace('`', '', (string) $config['database']);
+        $charset = preg_replace('/[^a-z0-9_]/i', '', (string) ($config['charset'] ?? 'utf8mb4'));
+        $collation = preg_replace('/[^a-z0-9_]/i', '', (string) ($config['collation'] ?? 'utf8mb4_unicode_ci'));
+        DB::connection((string) config('mci.demo.main_connection'))
+            ->statement("CREATE DATABASE IF NOT EXISTS `{$name}` CHARACTER SET {$charset} COLLATE {$collation}");
     }
 
     public static function enable(?User $actor = null): void
