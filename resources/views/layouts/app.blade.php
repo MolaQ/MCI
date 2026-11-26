@@ -19,45 +19,75 @@
 
         <x-app.school-switcher :user="$user" :school="$school" />
 
+        @php($features = app(\App\Support\Features::class))
+        @php($showAnnouncements = $school && $features->enabled(\App\Enums\Feature::Announcements))
+        @php($showEvents = $school && $features->enabled(\App\Enums\Feature::Events))
+        @php($showTasks = $school && $features->enabled(\App\Enums\Feature::Tasks))
+        @php($showWorkflows = $school && $features->enabled(\App\Enums\Feature::Workflows))
+        @php($showProjects = $school && $features->enabled(\App\Enums\Feature::Projects))
+        @php($showInvites = $school && $features->enabled(\App\Enums\Feature::Invites) && $user->can('viewAny', \App\Models\Invite::class))
+        @php($schoolAdmin = $school && ($user->can('users.manage') || $user->can('settings.manage') || $user->can('audit.view') || $user->can('categories.manage') || ($user->can('workflows.manage') && $showWorkflows)))
+
         <flux:sidebar.nav>
             <flux:sidebar.item icon="home" :href="route('dashboard')" :current="request()->routeIs('dashboard')" wire:navigate>
                 {{ __('Pulpit') }}
             </flux:sidebar.item>
-            @if ($school)
-                @feature('announcements')
-                    <flux:sidebar.item icon="megaphone" :href="route('communication.index')" :current="request()->routeIs('communication.*')" :badge="$unreadAnnouncements ?: null" wire:navigate>
-                        {{ __('Komunikaty') }}
-                    </flux:sidebar.item>
-                @endfeature
-                @feature('tasks')
-                    <flux:sidebar.item icon="check-circle" :href="route('tasks.index')" :current="request()->routeIs('tasks.*')" :badge="$openTasks ?: null" wire:navigate>
-                        {{ __('Zadania') }}
-                    </flux:sidebar.item>
-                @endfeature
-                @feature('workflows')
-                    <flux:sidebar.item icon="clipboard-document-check" :href="route('workflows.index')" :current="request()->routeIs('workflows.*')" :badge="$pendingDecisions ?: null" wire:navigate>
-                        {{ __('Obiegi') }}
-                    </flux:sidebar.item>
-                @endfeature
-                @feature('events')
-                    <flux:sidebar.item icon="calendar-days" :href="route('events.index')" :current="request()->routeIs('events.*')" wire:navigate>
-                        {{ __('Wydarzenia') }}
-                    </flux:sidebar.item>
-                @endfeature
-                <flux:sidebar.item icon="user-group" :href="route('groups.index')" :current="request()->routeIs('groups.*')" wire:navigate>
-                    {{ __('Grupy') }}
-                </flux:sidebar.item>
-                @if (app(\App\Support\Features::class)->enabled(\App\Enums\Feature::Invites) && $user->can('viewAny', \App\Models\Invite::class))
-                    <flux:sidebar.item icon="qr-code" :href="route('invites.index')" :current="request()->routeIs('invites.*')" wire:navigate>
-                        {{ __('Zaproszenia') }}
-                    </flux:sidebar.item>
-                @endif
-            @endif
         </flux:sidebar.nav>
 
-        @if ($school && ($user->can('users.manage') || $user->can('settings.manage') || $user->can('audit.view') || $user->can('categories.manage') || $user->can('workflows.manage')))
-            <flux:sidebar.nav>
-                <flux:sidebar.group :heading="__('Szkoła :name', ['name' => $school->short_name])" class="grid">
+        <nav class="grid gap-1" aria-label="{{ __('Moduły') }}">
+            @if ($showAnnouncements || $showEvents)
+                <x-app.nav-section key="news" :heading="__('Informacje')" icon="megaphone" :badge="$unreadAnnouncements ?: null"
+                                   :active="request()->routeIs('communication.*', 'events.*')">
+                    @if ($showAnnouncements)
+                        <flux:sidebar.item icon="megaphone" :href="route('communication.index')" :current="request()->routeIs('communication.*')" :badge="$unreadAnnouncements ?: null" wire:navigate>
+                            {{ __('Komunikaty') }}
+                        </flux:sidebar.item>
+                    @endif
+                    @if ($showEvents)
+                        <flux:sidebar.item icon="calendar-days" :href="route('events.index')" :current="request()->routeIs('events.*')" wire:navigate>
+                            {{ __('Wydarzenia') }}
+                        </flux:sidebar.item>
+                    @endif
+                </x-app.nav-section>
+            @endif
+
+            @if ($showTasks || $showWorkflows || $showProjects)
+                <x-app.nav-section key="work" :heading="__('Praca')" icon="briefcase" :badge="($openTasks + $pendingDecisions) ?: null"
+                                   :active="request()->routeIs('tasks.*', 'workflows.*', 'projects.*')">
+                    @if ($showTasks)
+                        <flux:sidebar.item icon="check-circle" :href="route('tasks.index')" :current="request()->routeIs('tasks.*')" :badge="$openTasks ?: null" wire:navigate>
+                            {{ __('Zadania') }}
+                        </flux:sidebar.item>
+                    @endif
+                    @if ($showWorkflows)
+                        <flux:sidebar.item icon="clipboard-document-check" :href="route('workflows.index')" :current="request()->routeIs('workflows.*')" :badge="$pendingDecisions ?: null" wire:navigate>
+                            {{ __('Obiegi') }}
+                        </flux:sidebar.item>
+                    @endif
+                    @if ($showProjects)
+                        <flux:sidebar.item icon="rectangle-stack" :href="route('projects.index')" :current="request()->routeIs('projects.*')" wire:navigate>
+                            {{ __('Projekty') }}
+                        </flux:sidebar.item>
+                    @endif
+                </x-app.nav-section>
+            @endif
+
+            @if ($school)
+                <x-app.nav-section key="people" :heading="__('Ludzie')" icon="user-group" :active="request()->routeIs('groups.*', 'invites.*')">
+                    <flux:sidebar.item icon="user-group" :href="route('groups.index')" :current="request()->routeIs('groups.*')" wire:navigate>
+                        {{ __('Grupy') }}
+                    </flux:sidebar.item>
+                    @if ($showInvites)
+                        <flux:sidebar.item icon="qr-code" :href="route('invites.index')" :current="request()->routeIs('invites.*')" wire:navigate>
+                            {{ __('Zaproszenia') }}
+                        </flux:sidebar.item>
+                    @endif
+                </x-app.nav-section>
+            @endif
+
+            @if ($schoolAdmin)
+                <x-app.nav-section key="school-admin" :heading="__('Szkoła :name', ['name' => $school->short_name])" icon="building-library" :open="false"
+                                   :active="request()->routeIs('admin.*')">
                     @can('users.manage')
                         <flux:sidebar.item icon="users" :href="route('admin.users.index')" :current="request()->routeIs('admin.users.*')" wire:navigate>
                             {{ __('Użytkownicy') }}
@@ -79,7 +109,7 @@
                             {{ __('Kategorie i typy') }}
                         </flux:sidebar.item>
                     @endcan
-                    @if ($user->can('workflows.manage') && app(\App\Support\Features::class)->enabled(\App\Enums\Feature::Workflows))
+                    @if ($user->can('workflows.manage') && $showWorkflows)
                         <flux:sidebar.item icon="clipboard-document-check" :href="route('admin.workflows')" :current="request()->routeIs('admin.workflows*')" wire:navigate>
                             {{ __('Szablony obiegów') }}
                         </flux:sidebar.item>
@@ -89,13 +119,11 @@
                             {{ __('Logi szkoły') }}
                         </flux:sidebar.item>
                     @endcan
-                </flux:sidebar.group>
-            </flux:sidebar.nav>
-        @endif
+                </x-app.nav-section>
+            @endif
 
-        @can('site-admin')
-            <flux:sidebar.nav>
-                <flux:sidebar.group :heading="__('Witryna')" class="grid">
+            @can('site-admin')
+                <x-app.nav-section key="site-admin" :heading="__('Witryna')" icon="globe-europe-africa" :open="false" :active="request()->routeIs('site.*')">
                     <flux:sidebar.item icon="building-office-2" :href="route('site.schools')" :current="request()->routeIs('site.schools*')" wire:navigate>
                         {{ __('Szkoły') }}
                     </flux:sidebar.item>
@@ -111,12 +139,15 @@
                     <flux:sidebar.item icon="clipboard-document-check" :href="route('site.workflows')" :current="request()->routeIs('site.workflows*')" wire:navigate>
                         {{ __('Szablony obiegów') }}
                     </flux:sidebar.item>
+                    <flux:sidebar.item icon="beaker" :href="route('site.demo')" :current="request()->routeIs('site.demo')" wire:navigate>
+                        {{ __('Tryb demo') }}
+                    </flux:sidebar.item>
                     <flux:sidebar.item icon="book-open" :href="route('site.journal')" :current="request()->routeIs('site.journal')" wire:navigate>
                         {{ __('Dziennik witryny') }}
                     </flux:sidebar.item>
-                </flux:sidebar.group>
-            </flux:sidebar.nav>
-        @endcan
+                </x-app.nav-section>
+            @endcan
+        </nav>
 
         <flux:sidebar.spacer />
 
@@ -141,6 +172,8 @@
     </flux:header>
 
     <flux:main>
+        {{-- Inside main: the body is a grid (sidebar | header/main), a top-level bar would take a column on phones. --}}
+        @include('partials.demo-banner', ['class' => '-mx-6 -mt-6 mb-6 lg:-mx-8 lg:-mt-8'])
         @if (session('status'))
             <flux:callout variant="success" icon="check-circle" :heading="session('status')" class="mb-6" />
         @endif

@@ -40,6 +40,7 @@ enum Role: string
                 Permission::AuditView,
                 Permission::CategoriesManage,
                 Permission::WorkflowsManage,
+                Permission::ProjectsManage,
             ],
             self::Teacher => [
                 Permission::AnnouncementsPublishOwnGroups,

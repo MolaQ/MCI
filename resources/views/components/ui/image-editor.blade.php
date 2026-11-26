@@ -10,6 +10,7 @@
     'background' => true,
     'gallery' => false,
     'button' => null,
+    'shapes' => [],
 ])
 
 @php
@@ -18,7 +19,7 @@
 @endphp
 
 {{-- Shared image picker + editor (docs/ARCHITECTURE.md §12.5). --}}
-<div x-data="mciImageEditor(@js(['model' => $model, 'aspect' => $aspect, 'presets' => $presets, 'maxSize' => $maxSize, 'background' => $background, 'gallery' => $gallery]))"
+<div x-data="mciImageEditor(@js(['model' => $model, 'aspect' => $aspect, 'presets' => $presets, 'maxSize' => $maxSize, 'background' => $background, 'gallery' => $gallery, 'shapes' => $shapes]))"
      {{ $attributes->class('space-y-2') }}>
     @if ($label)
         <flux:label>{{ $label }}</flux:label>
@@ -96,6 +97,22 @@
                             @endforeach
                         </div>
                     </section>
+
+                    @if (count($shapes) > 1)
+                        <section class="space-y-2">
+                            <h3 class="text-xs font-semibold tracking-wide text-zinc-400 uppercase">{{ __('Kształt') }}</h3>
+                            <div class="flex flex-wrap gap-1.5">
+                                @foreach ($shapes as $shape)
+                                    <button type="button" x-on:click="shape = @js($shape)" data-shape="{{ $shape }}"
+                                            :class="shape === @js($shape) ? 'bg-white text-zinc-900' : 'bg-white/10 hover:bg-white/20'"
+                                            class="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium transition">
+                                        <span @class(['inline-block size-3 border border-current', 'rounded-full' => $shape === 'circle', 'rounded-[2px]' => $shape !== 'circle'])></span>
+                                        {{ $shape === 'circle' ? __('Koło') : __('Kwadrat') }}
+                                    </button>
+                                @endforeach
+                            </div>
+                        </section>
+                    @endif
 
                     <section class="space-y-2">
                         <h3 class="text-xs font-semibold tracking-wide text-zinc-400 uppercase">{{ __('Powiększenie i położenie') }}</h3>

@@ -40,6 +40,12 @@ enum Feature: string
     case WorkflowCrossSchool = 'workflows.cross_school';
     case WorkflowTasks = 'workflows.tasks';
 
+    // Project Manager (Step 7)
+    case Projects = 'projects';
+    case ProjectCrossSchool = 'projects.cross_school';
+    case ProjectReminders = 'projects.reminders';
+    case ProjectCovers = 'projects.covers';
+
     // Public front and screens
     case PublicFront = 'public.front';
     case PublicOffers = 'public.offers';
@@ -79,6 +85,7 @@ enum Feature: string
             self::Events, self::PublicEvents, self::EventCovers, self::EventIcs, self::SchoolEventCategories => 'events',
             self::Tasks, self::TaskTeams, self::TaskReminders, self::TaskAttachments => 'tasks',
             self::Workflows, self::WorkflowSystemTemplates, self::WorkflowCrossSchool, self::WorkflowTasks => 'workflows',
+            self::Projects, self::ProjectCrossSchool, self::ProjectReminders, self::ProjectCovers => 'projects',
             self::PublicFront, self::PublicOffers, self::TvMode => 'public',
             self::GroupSelfJoin, self::GroupLogos, self::Invites, self::InviteQr, self::SchoolGroupTypes => 'groups',
             self::BackgroundRemoval => 'media',
@@ -94,6 +101,7 @@ enum Feature: string
             self::PublicEvents, self::EventCovers, self::EventIcs, self::SchoolEventCategories => self::Events,
             self::TaskTeams, self::TaskReminders, self::TaskAttachments => self::Tasks,
             self::WorkflowSystemTemplates, self::WorkflowCrossSchool, self::WorkflowTasks => self::Workflows,
+            self::ProjectCrossSchool, self::ProjectReminders, self::ProjectCovers => self::Projects,
             self::PublicOffers => self::PublicFront,
             self::InviteQr => self::Invites,
             default => null,

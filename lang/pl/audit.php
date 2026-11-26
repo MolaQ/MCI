@@ -77,4 +77,21 @@ return [
         'advanced' => 'Wniosek przeszedł do kolejnego etapu',
         'cancelled' => 'Wycofano wniosek',
     ],
+    'project' => [
+        'created' => 'Utworzono projekt',
+        'updated' => 'Zmieniono projekt',
+        'status' => 'Zmieniono status projektu',
+        'deleted' => 'Usunięto projekt',
+        'milestone_saved' => 'Zapisano kamień milowy',
+        'milestone_completed' => 'Osiągnięto kamień milowy',
+        'milestone_reopened' => 'Ponownie otwarto kamień milowy',
+        'milestone_deleted' => 'Usunięto kamień milowy',
+        'linked' => 'Powiązano pracę z projektem',
+        'unlinked' => 'Odłączono pracę od projektu',
+    ],
+    'demo' => [
+        'enabled' => 'Włączono tryb demonstracyjny',
+        'disabled' => 'Wyłączono tryb demonstracyjny',
+        'reset' => 'Odtworzono dane demonstracyjne',
+    ],
 ];

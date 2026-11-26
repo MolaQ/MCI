@@ -18,6 +18,7 @@ use App\Livewire\Dashboard;
 use App\Livewire\Events;
 use App\Livewire\Groups;
 use App\Livewire\Invites;
+use App\Livewire\Projects;
 use App\Livewire\Publicly;
 use App\Livewire\Settings;
 use App\Livewire\Settings\Profile;
@@ -54,6 +55,8 @@ Route::get('/manifest.webmanifest', [PwaController::class, 'manifest'])->name('p
 Route::get('/sw.js', [PwaController::class, 'serviceWorker'])->name('pwa.sw');
 Route::get('/offline', [PwaController::class, 'offline'])->name('pwa.offline');
 Route::get('/pwa/icon-{size}.png', [PwaController::class, 'icon'])->whereNumber('size')->name('pwa.icon');
+Route::get('/favicon.ico', [PwaController::class, 'faviconIco'])->name('favicon');
+Route::get('/favicon-{size}.png', [PwaController::class, 'favicon'])->whereNumber('size')->name('favicon.png');
 Route::get('/pwa/icon-{size}-{variant}.png', [PwaController::class, 'icon'])->whereNumber('size')->whereIn('variant', ['maskable', 'badge'])->name('pwa.icon.variant');
 // Called by the service worker when the browser rotates a push subscription (no session).
 Route::post('/push/odnow', [PushSubscriptionController::class, 'renew'])->middleware('throttle:20,1')
@@ -109,6 +112,13 @@ Route::middleware('auth')->group(function () {
         Route::livewire('/administracja/szkola/obiegi/{template}', Workflows\TemplateEdit::class)->whereNumber('template')->name('admin.workflows.edit');
     });
 
+    Route::middleware('feature:projects')->group(function () {
+        Route::livewire('/projekty', Projects\Index::class)->name('projects.index');
+        Route::livewire('/projekty/nowy', Projects\Edit::class)->name('projects.create');
+        Route::livewire('/projekty/{project}', Projects\Show::class)->whereNumber('project')->name('projects.show');
+        Route::livewire('/projekty/{project}/edycja', Projects\Edit::class)->whereNumber('project')->name('projects.edit');
+    });
+
     Route::post('/szkola/przelacz', SwitchSchoolController::class)->name('school.switch');
 
     Route::livewire('/ustawienia/profil', Profile::class)->name('profile');
@@ -150,5 +160,6 @@ Route::middleware('auth')->group(function () {
         Route::livewire('/obiegi/nowy', Workflows\TemplateEdit::class)->defaults('scope', 'site')->name('workflows.create');
         Route::livewire('/obiegi/{template}', Workflows\TemplateEdit::class)->defaults('scope', 'site')->whereNumber('template')->name('workflows.edit');
         Route::livewire('/dziennik', AuditLog::class)->defaults('scope', 'site')->name('journal');
+        Route::livewire('/tryb-demo', Site\DemoMode::class)->name('demo');
     });
 });

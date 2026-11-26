@@ -2,11 +2,13 @@
 
 namespace App\Livewire\Tasks;
 
+use App\Domain\Projects\Actions\LinkWork;
 use App\Domain\Tasks\Actions\SaveTask;
 use App\Domain\Tasks\TaskGuard;
 use App\Enums\Feature;
 use App\Enums\Role;
 use App\Enums\TaskPriority;
+use App\Livewire\Concerns\LinksToProject;
 use App\Livewire\Concerns\WithImageUploads;
 use App\Models\Task;
 use App\Models\User;
@@ -29,7 +31,7 @@ use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
 #[Title('Zadanie')]
 class Edit extends Component
 {
-    use WithImageUploads;
+    use LinksToProject, WithImageUploads;
 
     #[Locked]
     public ?int $taskId = null;
@@ -80,6 +82,7 @@ class Edit extends Component
             $this->checklist = $task->checklist()->get()->map(fn ($i) => ['id' => $i->id, 'body' => $i->body, 'is_done' => $i->is_done])->all();
         } else {
             $this->authorize('create', Task::class);
+            $this->rememberProject();
         }
     }
 
@@ -252,6 +255,14 @@ class Edit extends Component
             $this->setErrorBag($e->validator->errors());
 
             return null;
+        }
+
+        if ($this->linkProject && ! $task->is_personal) {
+            app(LinkWork::class)->task(Auth::user(), $this->linkProject, $task);
+
+            Flux::toast(variant: 'success', text: __('Utworzono zadanie w projekcie.'));
+
+            return $this->redirectRoute('projects.show', $this->linkProject, navigate: true);
         }
 
         Flux::toast(variant: 'success', text: $this->taskId ? __('Zapisano zadanie.') : __('Utworzono zadanie.'));

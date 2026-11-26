@@ -2,7 +2,9 @@
 
 namespace App\Livewire\Workflows;
 
+use App\Domain\Projects\Actions\LinkWork;
 use App\Domain\Workflows\Actions\SubmitRequest;
+use App\Livewire\Concerns\LinksToProject;
 use App\Livewire\Concerns\WithImageUploads;
 use App\Models\WorkflowTemplate;
 use App\Support\CurrentSchool;
@@ -19,7 +21,7 @@ use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
 #[Title('Nowy wniosek')]
 class Create extends Component
 {
-    use WithImageUploads;
+    use LinksToProject, WithImageUploads;
 
     #[Url(as: 'szablon', except: '')]
     public string $templateId = '';
@@ -36,6 +38,7 @@ class Create extends Component
 
     public function mount(): void
     {
+        $this->rememberProject();
         abort_unless(app(CurrentSchool::class)->id(), 403);
         if ($this->templateId !== '' && ! $this->template) {
             $this->templateId = '';
@@ -103,6 +106,10 @@ class Create extends Component
             $this->setErrorBag($e->validator->errors());
 
             return null;
+        }
+
+        if ($this->linkProject) {
+            app(LinkWork::class)->request(Auth::user(), $this->linkProject, $request);
         }
 
         Flux::toast(variant: 'success', text: __('Złożono wniosek. Trafił do: :who.', ['who' => $request->currentStage()['approver_label'] ?? '—']));

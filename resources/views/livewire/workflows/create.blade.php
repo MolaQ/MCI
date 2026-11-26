@@ -10,6 +10,13 @@
         </x-slot:actions>
     </x-ui.page-header>
 
+    @if ($this->linkProject)
+        <div class="flex items-center gap-2 rounded-mci border border-primary/30 bg-primary/5 px-4 py-2.5 text-sm" data-link-project>
+            <flux:icon name="rectangle-stack" variant="mini" class="text-primary" />
+            {{ __('Wniosek zostanie powiązany z projektem :name.', ['name' => $this->linkProject->name]) }}
+        </div>
+    @endif
+
     @if (! $t)
         <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             @forelse ($this->templates as $template)

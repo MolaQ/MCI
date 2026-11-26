@@ -121,6 +121,7 @@ class Notifications extends Component
                 'confirmations' => [__('Prośby o potwierdzenie'), __('Komunikaty wymagające potwierdzenia zapoznania się.')],
                 'tasks' => [__('Zadania'), __('Nowe przydziały, przypomnienia o terminach i wykonanie Twoich zadań.')],
                 'workflows' => [__('Obiegi i wnioski'), __('Wnioski czekające na Twoją decyzję, zwrócone do poprawy i decyzje w Twoich wnioskach.')],
+                'projects' => [__('Projekty'), __('Dodanie do zespołu projektu, zmiana statusu i terminy kamieni milowych.')],
                 'announcements' => [__('Wszystkie komunikaty'), __('Także zwykłe komunikaty — może być ich sporo.')],
             ],
         ]);

@@ -19,6 +19,9 @@ export default (options = {}) => ({
     aspect: options.aspect ?? 'free',
     maxSize: options.maxSize ?? 1600,
     allowBackground: options.background ?? true,
+    // Optional mask: 'square' (default) or 'circle' (outside the circle becomes transparent).
+    shapes: options.shapes ?? [],
+    shape: (options.shapes ?? [])[0] ?? 'square',
     // Gallery mode: each result is handed to the server and the picker resets.
     gallery: options.gallery ?? false,
     open: false,
@@ -55,7 +58,7 @@ export default (options = {}) => ({
         this._wire = this.$wire;
         this.$watch('aspect', () => this.$nextTick(() => this.fitFrame()));
         ['bgMode', 'bgColor', 'tolerance', 'softness'].forEach((key) => this.$watch(key, () => this.rebuildSoon()));
-        ['zoom', 'offsetX', 'offsetY'].forEach((key) => this.$watch(key, () => this.draw()));
+        ['zoom', 'offsetX', 'offsetY', 'shape'].forEach((key) => this.$watch(key, () => this.draw()));
         this._onResize = () => this.open && this.fitFrame();
         window.addEventListener('resize', this._onResize);
     },
@@ -318,6 +321,14 @@ export default (options = {}) => ({
             work.width * s,
             work.height * s,
         );
+        if (this.shape === 'circle') {
+            ctx.save();
+            ctx.globalCompositeOperation = 'destination-in';
+            ctx.beginPath();
+            ctx.arc(fw / 2, fh / 2, Math.min(fw, fh) / 2, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.restore();
+        }
     },
 
     draw() {

@@ -26,6 +26,7 @@ enum Permission: string
     case SettingsManage = 'settings.manage';
     case CategoriesManage = 'categories.manage';
     case WorkflowsManage = 'workflows.manage';
+    case ProjectsManage = 'projects.manage';
 
     public function label(): string
     {

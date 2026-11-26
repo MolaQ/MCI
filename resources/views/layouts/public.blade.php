@@ -5,6 +5,7 @@
     <meta name="description" content="{{ __('Szkoły, oferta edukacyjna i publiczne wydarzenia w jednym miejscu.') }}" />
 </head>
 <body class="flex min-h-screen flex-col bg-zinc-50 antialiased dark:bg-zinc-900">
+    @include('partials.demo-banner')
     @php($home = \App\Livewire\Publicly\Home::url())
     @php($manySchools = \App\Models\School::query()->publiclyListed()->count() > 1)
     <header class="sticky top-0 z-30 border-b border-zinc-200/80 bg-white/85 backdrop-blur dark:border-zinc-700/80 dark:bg-zinc-900/85">
