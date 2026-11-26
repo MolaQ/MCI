@@ -42,6 +42,18 @@
             </form>
         </flux:card>
 
+        <flux:card class="space-y-4" data-profile-calendar>
+            <div>
+                <flux:heading size="lg">{{ __('Kalendarz na pulpicie') }}</flux:heading>
+                <flux:text>{{ __('Który widok otwiera się domyślnie. Na pulpicie zawsze możesz przełączyć widok jednym kliknięciem.') }}</flux:text>
+            </div>
+            <flux:radio.group wire:model.live="calendar" variant="cards" class="flex-col sm:flex-row">
+                <flux:radio value="" :label="__('Jak w szkole')" :description="__('Domyślny widok ustawiony przez szkołę.')" />
+                <flux:radio value="personal" :label="__('Mój kalendarz')" :description="__('Wydarzenia szkoły oraz moje zadania, kamienie milowe moich projektów i decyzje.')" />
+                <flux:radio value="school" :label="__('Kalendarz szkoły')" :description="__('Wydarzenia i kamienie milowe wszystkich projektów szkoły, bez zadań osobistych.')" />
+            </flux:radio.group>
+        </flux:card>
+
         <flux:card class="space-y-5">
             <flux:heading size="lg">{{ __('Zmiana hasła') }}</flux:heading>
             <form wire:submit="updatePassword" class="space-y-4">

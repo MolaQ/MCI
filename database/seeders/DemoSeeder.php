@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use App\Domain\Communication\Actions\PublishAnnouncement;
+use App\Domain\Invites\Actions\CreateInvite;
 use App\Domain\Projects\Actions\ManageMilestones;
 use App\Domain\Projects\Actions\SaveProject;
 use App\Domain\Tasks\Actions\SaveTask;
@@ -15,6 +16,7 @@ use App\Enums\Role;
 use App\Models\Announcement;
 use App\Models\Event;
 use App\Models\Group;
+use App\Models\Invite;
 use App\Models\Project;
 use App\Models\School;
 use App\Models\Task;
@@ -27,8 +29,12 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 /**
- * Local/demo data only: ~70 staff in the first school, plus a small
- * partner school that shares a few teachers (multi-school demo).
+ * Local/demo data only: ~70 staff in the first school with every module
+ * filled in (announcements, today's agenda and the month's events, personal
+ * and team tasks, workflow templates and requests, projects with milestones
+ * over time, invites, offers). Locally a small partner school shares a few
+ * teachers (multi-school demo); the separate demo database
+ * (mci.demo.single_school) keeps to one school.
  * Locally: php artisan db:seed --class=DemoSeeder
  * On a live server: php artisan mci:demo reset (separate demo database).
  */
@@ -44,6 +50,7 @@ class DemoSeeder extends Seeder
             return;
         }
 
+        $single = DB::getDefaultConnection() === DemoMode::CONNECTION && (bool) config('mci.demo.single_school', true);
         $current = app(CurrentSchool::class);
         $school = School::query()->orderBy('id')->firstOrFail();
         $current->set($school);
@@ -100,32 +107,36 @@ class DemoSeeder extends Seeder
         // The school safety officer: an ordinary teacher with an individual alerts.send grant.
         $teacherUsers->first()->givePermissionTo('alerts.send');
 
-        // A partner school sharing three teachers.
-        $partner = School::query()->firstOrCreate(['slug' => 'zs2'], [
-            'name' => 'Zespół Szkół nr 2', 'short_name' => 'ZS2',
-            'settings' => ['allow_self_registration' => true, 'max_profile_visibility' => 'school'],
-        ]);
-        SystemGroupsSeeder::seedFor($partner);
-        $current->set($partner);
-        foreach ($teacherUsers->take(3) as $user) {
-            $user->schools()->syncWithoutDetaching([$partner->id => ['status' => 'active', 'joined_via' => 'admin']]);
-            $user->unsetRelation('roles')->assignRole(Role::Teacher->value);
+        // Locally: a partner school sharing three teachers (not in the single-school demo database).
+        $partner = null;
+        if (! $single) {
+            $partner = School::query()->firstOrCreate(['slug' => 'zs2'], [
+                'name' => 'Zespół Szkół nr 2', 'short_name' => 'ZS2',
+                'settings' => ['allow_self_registration' => true, 'max_profile_visibility' => 'school'],
+            ]);
+            SystemGroupsSeeder::seedFor($partner);
+            $current->set($partner);
+            foreach ($teacherUsers->take(3) as $user) {
+                $user->schools()->syncWithoutDetaching([$partner->id => ['status' => 'active', 'joined_via' => 'admin']]);
+                $user->unsetRelation('roles')->assignRole(Role::Teacher->value);
+            }
+            $current->set(null);
         }
-        $current->set(null);
 
         $this->publicFront($school, $partner);
         $this->announcements($school, $coordinators->first(), $teacherUsers, $subjectGroups->first(), $tutors);
         $this->tasks($school, $coordinators->first(), $teacherUsers, $tutors);
         $this->workflows($school, $coordinators->first(), $teacherUsers);
         $this->projects($school, $partner, $coordinators->first(), $teacherUsers, $teachers);
+        $this->invites($school, $coordinators->first(), $teachers, $tutors);
 
-        $this->command?->info('Demo data: 70 staff in '.$school->short_name.', partner school '.$partner->short_name.' with 3 shared teachers.');
+        $this->command?->info('Demo data: 70 staff in '.$school->short_name.($partner ? ', partner school '.$partner->short_name.' with 3 shared teachers.' : ' (single school, every module).'));
     }
 
     /**
      * Public profiles, offers and events for the public front (Step 3).
      */
-    private function publicFront(School $school, School $partner): void
+    private function publicFront(School $school, ?School $partner): void
     {
         $school->update([
             'city' => $school->city ?: 'Kraków',
@@ -137,7 +148,7 @@ class DemoSeeder extends Seeder
             'website' => 'https://example.edu.pl',
             'color' => $school->color ?: '#1d4ed8',
         ]);
-        $partner->update([
+        $partner?->update([
             'city' => 'Kraków', 'color' => '#047857',
             'tagline' => 'Liceum i technikum ekonomiczne — języki, logistyka, rachunkowość.',
             'description' => 'Szkoła partnerska ZSM. Wspólne konkursy, zawody sportowe i dni otwarte.',
@@ -154,23 +165,40 @@ class DemoSeeder extends Seeder
             [$partner, 'technikum', 'Technik logistyk', 'Magazyn, spedycja, transport.'],
             [$partner, 'technikum', 'Technik ekonomista', 'Rachunkowość i finanse firm.'],
         ] as $i => [$s, $kind, $name, $description]) {
+            if (! $s) {
+                continue;
+            }
             $s->offers()->firstOrCreate(['name' => $name], ['kind' => $kind, 'description' => $description, 'position' => $i]);
         }
 
         $owner = $school->users()->first();
+        // [school, title, category, days from today, time (null = all day), hours, location, visibility, public text]
         foreach ([
-            [$school, 'Dzień Otwarty ZSM', 'open_day', 10, '10:00', 'Budynek główny', 'public', 'Zwiedzanie pracowni, pokazy robotów i spotkanie z nauczycielami. Zapraszamy uczniów klas ósmych z rodzicami.'],
-            [$school, 'Międzyszkolny konkurs CAD', 'competition', 17, '09:00', 'Pracownia CAD', 'public', 'Konkurs projektowania 3D dla uczniów szkół ponadpodstawowych.'],
-            [$partner, 'Turniej piłki siatkowej szkół partnerskich', 'sport', 5, '12:00', 'Hala sportowa ZS2', 'public', 'Rozgrywki drużyn ZSM i ZS2. Kibice mile widziani!'],
-            [$partner, 'Dzień Otwarty ZS2', 'open_day', 24, '11:00', 'ZS2, aula', 'public', 'Poznaj klasy językowe i kierunki ekonomiczne.'],
-            [$school, 'Rada pedagogiczna', 'meeting', 3, '15:00', 'Sala 12', 'school_only', null],
-            [$school, 'Szkolenie BHP dla nauczycieli ZSM i ZS2', 'meeting', 8, '14:00', 'Aula', 'inter_school', null],
-            [$school, 'Zbiórka dla schroniska', 'charity', 0, '08:00', 'Hol', 'public', 'Zbieramy karmę i koce — cały dzień, hol główny.'],
-        ] as [$s, $title, $category, $days, $time, $location, $visibility, $public]) {
+            [$school, 'Apel poranny', 'meeting', 0, '08:00', 0.5, 'Aula', 'school_only', null],
+            [$school, 'Zbiórka dla schroniska', 'charity', 0, null, 0, 'Hol', 'public', 'Zbieramy karmę i koce — cały dzień, hol główny.'],
+            [$school, 'Konsultacje dla rodziców', 'meeting', 0, '16:00', 2, 'Sale lekcyjne', 'public', 'Spotkania z wychowawcami i nauczycielami przedmiotów.'],
+            [$school, 'Spotkanie z absolwentami', 'meeting', -4, '12:00', 2, 'Aula', 'public', 'Absolwenci opowiadają o studiach i pracy w przemyśle.'],
+            [$school, 'Rada pedagogiczna', 'meeting', 3, '15:00', 2, 'Sala 12', 'school_only', null],
+            [$partner ?? $school, 'Turniej piłki siatkowej', 'sport', 5, '12:00', 3, $partner ? 'Hala sportowa ZS2' : 'Hala sportowa', 'public', 'Rozgrywki drużyn klasowych. Kibice mile widziani!'],
+            [$school, 'Matura próbna z matematyki', 'meeting', 6, '09:00', 3, 'Sala gimnastyczna', 'school_only', null],
+            [$school, 'Szkolenie BHP dla nauczycieli', 'meeting', 8, '14:00', 2, 'Aula', $partner ? 'inter_school' : 'school_only', null],
+            [$school, 'Dzień Otwarty ZSM', 'open_day', 10, '10:00', 4, 'Budynek główny', 'public', 'Zwiedzanie pracowni, pokazy robotów i spotkanie z nauczycielami. Zapraszamy uczniów klas ósmych z rodzicami.'],
+            [$school, 'Tydzień zawodowca', 'open_day', 12, null, 0, 'Pracownie zawodowe', 'public', 'Pięć dni warsztatów z pracodawcami: CNC, robotyka, programowanie.', 4],
+            [$school, 'Międzyszkolny konkurs CAD', 'competition', 17, '09:00', 5, 'Pracownia CAD', 'public', 'Konkurs projektowania 3D dla uczniów szkół ponadpodstawowych.'],
+            [$school, 'Wigilia szkolna', 'meeting', 24, '11:00', 2, 'Aula', 'school_only', null],
+            [$partner, 'Dzień Otwarty ZS2', 'open_day', 24, '11:00', 3, 'ZS2, aula', 'public', 'Poznaj klasy językowe i kierunki ekonomiczne.'],
+        ] as $row) {
+            [$s, $title, $category, $days, $time, $hours, $location, $visibility, $public] = $row;
+            if (! $s) {
+                continue;
+            }
+            $span = $row[9] ?? 0;
+            $start = $time ? now()->addDays($days)->setTimeFromTimeString($time) : now()->addDays($days)->startOfDay();
             Event::query()->firstOrCreate(['school_id' => $s->id, 'title' => $title], [
                 'owner_id' => $owner?->id, 'category' => $category,
-                'starts_at' => now()->addDays($days)->setTimeFromTimeString($time),
-                'ends_at' => now()->addDays($days)->setTimeFromTimeString($time)->addHours(3),
+                'starts_at' => $start,
+                'ends_at' => $time ? $start->copy()->addMinutes((int) ($hours * 60)) : $start->copy()->addDays($span)->endOfDay(),
+                'all_day' => $time === null,
                 'location' => $location, 'visibility' => $visibility, 'public_description' => $public,
             ]);
         }
@@ -257,6 +285,10 @@ class DemoSeeder extends Seeder
         ], ['user:'.$teachers[0]->id]);
 
         if ($admin && $admin->belongsToSchool($school)) {
+            $save->handle($coordinator, $school, [
+                'title' => 'Zatwierdzić plan dyżurów na Dzień Otwarty', 'priority' => 3,
+                'due_date' => now()->toDateString(), 'due_time' => '14:00',
+            ], ['user:'.$admin->id]);
             app(CurrentSchool::class)->set($school, $admin);
             $save->handle($admin, $school, ['title' => 'Zamówić tonery do drukarek', 'due_date' => now()->toDateString()]);
             $save->handle($admin, $school, ['title' => 'Sprawdzić kopię zapasową', 'priority' => 1]);
@@ -291,6 +323,18 @@ class DemoSeeder extends Seeder
         $publish->handle($author, $school, [
             'title' => 'Zapraszamy na Dzień Otwarty!',
             'body' => '<p>Zapraszamy kandydatów i rodziców do zwiedzania pracowni. Szczegóły na stronie szkoły.</p>',
+            'is_public' => true, 'pinned' => true,
+        ], ['everyone']);
+
+        $publish->handle($author, $school, [
+            'title' => 'Dziś skrócone lekcje — 30 minut',
+            'body' => '<p>Z powodu konsultacji dla rodziców wszystkie lekcje trwają dziś 30 minut. Ostatnia lekcja kończy się o 13:35.</p>',
+            'priority' => 'urgent', 'is_public' => true,
+        ], ['everyone']);
+
+        $publish->handle($author, $school, [
+            'title' => 'Wyniki konkursu „Mistrz CNC”',
+            'body' => '<p>Gratulujemy laureatom! Dyplomy wręczymy na apelu.</p>',
             'is_public' => true,
         ], ['everyone']);
 
@@ -302,7 +346,7 @@ class DemoSeeder extends Seeder
         app(CurrentSchool::class)->set(null);
     }
 
-    private function projects(School $school, School $partner, User $coordinator, $teachers, ?Group $teachersGroup): void
+    private function projects(School $school, ?School $partner, User $coordinator, $teachers, ?Group $teachersGroup): void
     {
         if (Project::query()->exists()) {
             return;
@@ -312,35 +356,55 @@ class DemoSeeder extends Seeder
         $save = app(SaveProject::class);
         $milestones = app(ManageMilestones::class);
         $admin = User::query()->where('email', config('mci.admin.email'))->first();
+        $team = array_values(array_filter([$teachersGroup ? 'group:'.$teachersGroup->id : null, $admin ? 'user:'.$admin->id : null]));
 
-        $open = $save->handle($coordinator, $school, [
-            'name' => 'Dzień Otwarty 2027', 'kind' => 'open_day', 'status' => 'in_progress',
-            'starts_on' => now()->toDateString(), 'ends_on' => now()->addWeeks(6)->toDateString(),
-            'coordinator_id' => $coordinator->id,
-            'budget_notes' => "Rada rodziców: 2 000 zł\nSala gimnastyczna i pracownie CNC",
-            'description' => '<p>Pokazy w pracowniach, stoiska kierunków i spotkanie z rodzicami ósmoklasistów.</p>',
-        ], array_values(array_filter([$teachersGroup ? 'group:'.$teachersGroup->id : null, $admin ? 'user:'.$admin->id : null])), [$partner->id]);
-        foreach ([['Plan pokazów w pracowniach', -3, true], ['Zamówienie ulotek i plakatów', 2, false], ['Próba generalna', 30, false], ['Dzień otwarty', 42, false]] as $i => [$title, $days, $done]) {
-            $m = $milestones->save($coordinator, $open, ['title' => $title, 'due_date' => now()->addDays($days)->toDateString(), 'due_time' => $i === 3 ? '10:00' : null]);
-            if ($done) {
-                $milestones->toggle($coordinator, $m);
+        // [name, kind, status, starts (days), ends (days), visibility, milestones [title, days, done], budget]
+        foreach ([
+            ['Dzień Otwarty 2027', 'open_day', 'in_progress', -10, 42, 'public', [['Plan pokazów w pracowniach', -3, true], ['Zamówienie ulotek i plakatów', 2, false], ['Próba generalna', 30, false], ['Dzień otwarty', 42, false]], "Rada rodziców: 2 000 zł\nSala gimnastyczna i pracownie CNC"],
+            ['Konkurs robotyki „RoboZSM”', 'competition', 'in_progress', -21, 35, 'public', [['Regulamin i zgłoszenia', -14, true], ['Eliminacje szkolne', 9, false], ['Finał', 35, false]], 'Nagrody: sponsor (3 zestawy Arduino)'],
+            ['Paczka świąteczna — wolontariat', 'event', 'in_progress', -7, 24, 'public', [['Zbiórka darów', 14, false], ['Pakowanie i dostawa', 23, false]], null],
+            ['Grant „Laboratoria przyszłości”', 'grant', 'in_progress', -60, 75, 'school', [['Zamówienie drukarek 3D', -20, true], ['Szkolenie nauczycieli', 12, false], ['Rozliczenie grantu', 75, false]], "Kwota: 120 000 zł\nRozliczenie do końca lutego"],
+            ['Remont auli', 'investment', 'on_hold', -30, 60, 'school', [['Wybór wykonawcy', -5, false]], 'Czekamy na decyzję organu prowadzącego'],
+            ['Erasmus+ Praktyki w Hiszpanii', 'erasmus', 'planned', 45, 230, 'team', [['Rekrutacja uczniów', 50, false], ['Wyjazd', 120, false]], null],
+            ['Modernizacja pracowni CNC', 'investment', 'completed', -150, -30, 'school', [], null],
+        ] as $i => [$name, $kind, $status, $from, $to, $visibility, $steps, $budget]) {
+            $lead = $i === 3 ? ($teachers->get(1) ?? $coordinator) : $coordinator;
+            $project = $save->handle($coordinator, $school, [
+                'name' => $name, 'kind' => $kind, 'status' => $status, 'visibility' => $visibility,
+                'starts_on' => now()->addDays($from)->toDateString(), 'ends_on' => now()->addDays($to)->toDateString(),
+                'coordinator_id' => $lead->id, 'budget_notes' => $budget,
+                'description' => '<p>'.e($name).': przykładowy projekt demonstracyjny z kamieniami milowymi.</p>',
+            ], $visibility === 'team' ? ['user:'.$coordinator->id] : $team, $partner && $i === 0 ? [$partner->id] : []);
+            foreach ($steps as $n => [$title, $days, $done]) {
+                $m = $milestones->save($coordinator, $project, ['title' => $title, 'due_date' => now()->addDays($days)->toDateString(), 'due_time' => $n === count($steps) - 1 ? '10:00' : null]);
+                if ($done) {
+                    $milestones->toggle($coordinator, $m);
+                }
+            }
+            if ($i === 0) {
+                $task = app(SaveTask::class)->handle($coordinator, $school, ['title' => 'Przygotować stoisko mechatroniki', 'due_date' => now()->addDays(10)->toDateString()], ['user:'.$teachers->first()->id]);
+                $task->update(['project_id' => $project->id, 'project_milestone_id' => $project->milestones()->skip(2)->first()?->id]);
             }
         }
-        $task = app(SaveTask::class)->handle($coordinator, $school, ['title' => 'Przygotować stoisko mechatroniki', 'due_date' => now()->addDays(10)->toDateString()], ['user:'.$teachers->first()->id]);
-        $task->update(['project_id' => $open->id, 'project_milestone_id' => $open->milestones()->skip(2)->first()?->id]);
-
-        $save->handle($coordinator, $school, [
-            'name' => 'Erasmus+ Praktyki w Hiszpanii', 'kind' => 'erasmus', 'status' => 'planned',
-            'starts_on' => now()->addMonths(3)->toDateString(), 'ends_on' => now()->addMonths(9)->toDateString(),
-            'coordinator_id' => $teachers->get(1)?->id ?? $coordinator->id, 'visibility' => 'team',
-            'description' => '<p>Wyjazd 20 uczniów technikum na 4 tygodnie praktyk.</p>',
-        ], ['user:'.$coordinator->id]);
-
-        $save->handle($coordinator, $school, [
-            'name' => 'Modernizacja pracowni CNC', 'kind' => 'investment', 'status' => 'completed',
-            'starts_on' => now()->subMonths(5)->toDateString(), 'ends_on' => now()->subMonth()->toDateString(),
-            'coordinator_id' => $coordinator->id,
-        ]);
         $current->set(null);
+    }
+
+    private function invites(School $school, User $coordinator, ?Group $teachers, ?Group $tutors): void
+    {
+        if (Invite::query()->where('school_id', $school->id)->exists() || ! $teachers) {
+            return;
+        }
+        app(CurrentSchool::class)->set($school, $coordinator);
+        $create = app(CreateInvite::class);
+        $create->handle($coordinator, $school, [
+            'kind' => 'group_link', 'label' => 'Plakat w pokoju nauczycielskim',
+            'groups' => array_filter([$teachers->id => 'member', $tutors?->id => $tutors ? 'member' : null]),
+            'expires_at' => now()->addDays(30), 'allow_self_registration' => true,
+        ]);
+        $create->handle($coordinator, $school, [
+            'kind' => 'personal', 'email' => 'nowy.nauczyciel@example.edu.pl', 'label' => 'Nowy nauczyciel informatyki',
+            'groups' => [$teachers->id => 'member'], 'send_email' => false,
+        ]);
+        app(CurrentSchool::class)->set(null);
     }
 }

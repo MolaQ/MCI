@@ -114,11 +114,6 @@ return [
     ],
 
     /*
-    | To-Do (Step 5): default reminder before the due time, in minutes, for
-    | tasks with an hour and for all-day tasks; overdue reminders are sent
-    | once a day, only between these hours (Europe/Warsaw).
-    */
-    /*
     | Demo mode (site admin → Tryb demo). Demo data lives in a separate
     | database (connection "demo"), never in the production one; a flag file
     | outside both databases switches the whole site. The demo database name
@@ -130,8 +125,36 @@ return [
         'flag' => env('MCI_DEMO_FLAG', storage_path('app/demo-mode.json')),
         'admin_email' => env('MCI_DEMO_ADMIN_EMAIL', 'demo@example.edu.pl'),
         'admin_password' => env('MCI_DEMO_ADMIN_PASSWORD', 'demo12345'),
+        // The demo database holds one school with every module filled in.
+        'single_school' => true,
     ],
 
+    /*
+    | Calendar on the dashboard: "personal" (my tasks, my projects, my
+    | decisions + school events) or "school" (everything of the school).
+    | Schools may change it (Ustawienia szkoły), people in their profile.
+    */
+    'calendar' => [
+        'default' => env('MCI_CALENDAR_DEFAULT', 'personal'),
+    ],
+
+    /*
+    | TV board (/tv): screens shown in turn and how long each stays, in
+    | seconds. Site admins change it in Witryna → Tryb TV, schools may
+    | override it, and a single screen may override both with
+    | ?ekrany=agenda:20,calendar:30 in its URL.
+    */
+    'tv' => [
+        'screens' => ['agenda' => 20, 'calendar' => 20, 'projects' => 20, 'announcements' => 15],
+        'min_seconds' => 5,
+        'max_seconds' => 600,
+    ],
+
+    /*
+    | To-Do (Step 5): default reminder before the due time, in minutes, for
+    | tasks with an hour and for all-day tasks; overdue reminders are sent
+    | once a day, only between these hours (Europe/Warsaw).
+    */
     'tasks' => [
         'remind_before_minutes' => (int) env('MCI_TASK_REMIND_MINUTES', 60),
         'remind_before_minutes_all_day' => (int) env('MCI_TASK_REMIND_MINUTES_ALL_DAY', 24 * 60),

@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Publicly;
 
+use App\Domain\Calendar\Agenda;
 use App\Enums\Feature;
 use App\Enums\TaxonomyKind;
 use App\Models\Announcement;
@@ -12,6 +13,7 @@ use App\Support\Features;
 use App\Support\Mentions;
 use App\Support\RichText;
 use App\Support\Taxonomy;
+use Carbon\CarbonImmutable;
 use Flux\Flux;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
@@ -47,6 +49,9 @@ class Home extends Component
     #[Url(as: 'kiedy', except: 'upcoming')]
     public string $when = 'upcoming';
 
+    #[Url(as: 'miesiac', except: '')]
+    public string $month = '';
+
     public int $limit = self::PAGE;
 
     public string $code = '';
@@ -64,6 +69,9 @@ class Home extends Component
         if (in_array($property, ['school', 'category', 'when'], true)) {
             $this->limit = self::PAGE;
         }
+        if ($property === 'month' && Agenda::month($this->month)->format('Y-m') !== $this->month) {
+            $this->month = '';
+        }
     }
 
     public function setFilter(string $filter, string $value): void
@@ -78,7 +86,50 @@ class Home extends Component
 
     public function resetFilters(): void
     {
-        $this->reset('school', 'category', 'when', 'limit');
+        $this->reset('school', 'category', 'when', 'limit', 'month');
+    }
+
+    public function shiftMonth(int $by): void
+    {
+        $this->month = $by === 0 ? '' : Agenda::month($this->month)->addMonths(max(-12, min(12, $by)))->format('Y-m');
+        if ($this->month === now()->format('Y-m')) {
+            $this->month = '';
+        }
+    }
+
+    /** Today in the chosen school (category applies): public events and public project milestones. */
+    #[Computed]
+    public function today(): Collection
+    {
+        $items = app(Agenda::class)->forPublic($this->schoolId(), now()->startOfDay(), now()->endOfDay(), $this->category ?: null);
+
+        return collect(Agenda::byDay($items, now()->startOfDay(), now()->endOfDay())[now()->toDateString()] ?? []);
+    }
+
+    /** @return array<string, Collection> */
+    #[Computed]
+    public function monthDays(): array
+    {
+        $grid = Agenda::monthGrid(Agenda::month($this->month));
+        $from = $grid[0][0]->startOfDay();
+        $to = end($grid)[6]->endOfDay();
+
+        return Agenda::byDay(app(Agenda::class)->forPublic($this->schoolId(), $from, $to, $this->category ?: null), $from, $to);
+    }
+
+    /** @return array{from: CarbonImmutable, to: CarbonImmutable} */
+    #[Computed]
+    public function window(): array
+    {
+        $from = CarbonImmutable::now()->startOfWeek()->subWeeks(2);
+
+        return ['from' => $from, 'to' => $from->addWeeks(16)->endOfDay()];
+    }
+
+    #[Computed]
+    public function timeline(): Collection
+    {
+        return app(Agenda::class)->publicProjects($this->schoolId(), $this->window['from'], $this->window['to']);
     }
 
     public function loadMore(): void
@@ -278,6 +329,7 @@ class Home extends Component
             'list' => $this->featuredFirst($events->take($this->limit)),
             'hasMore' => $events->count() > $this->limit,
             'filtered' => $this->school !== '' || $this->category !== '' || $this->when !== 'upcoming',
+            'currentMonth' => Agenda::month($this->month),
             'schoolLabel' => $this->schools->firstWhere('slug', $this->school)?->short_name,
             'focus' => $this->schools->firstWhere('id', $this->schoolId()),
             'categoryLabel' => $activeCategory?->label(),

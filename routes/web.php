@@ -146,6 +146,7 @@ Route::middleware('auth')->group(function () {
         Route::livewire('/szkola/profil-publiczny', Admin\SchoolProfile::class)->name('school.profile');
         Route::livewire('/szkola/funkcje', Admin\SchoolFeatures::class)->name('school.features');
         Route::livewire('/szkola/kategorie', Catalog\Manage::class)->name('school.catalog');
+        Route::livewire('/szkola/tryb-tv', Admin\TvSettings::class)->middleware('feature:public.tv')->name('school.tv');
         Route::livewire('/logi', AuditLog::class)->name('audit');
     });
 
@@ -161,5 +162,6 @@ Route::middleware('auth')->group(function () {
         Route::livewire('/obiegi/{template}', Workflows\TemplateEdit::class)->defaults('scope', 'site')->whereNumber('template')->name('workflows.edit');
         Route::livewire('/dziennik', AuditLog::class)->defaults('scope', 'site')->name('journal');
         Route::livewire('/tryb-demo', Site\DemoMode::class)->name('demo');
+        Route::livewire('/tryb-tv', Admin\TvSettings::class)->defaults('scope', 'site')->name('tv');
     });
 });

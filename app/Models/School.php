@@ -92,6 +92,15 @@ class School extends Model
         return $this->hasMany(Event::class);
     }
 
+    /**
+     * Only one school in the whole system: school pickers, filters and
+     * badges are hidden. One cheap query; call it once per view.
+     */
+    public static function isSingle(): bool
+    {
+        return static::query()->count() <= 1;
+    }
+
     /** Shown on the public front: active and listed by the school. */
     public function scopePubliclyListed(Builder $query): void
     {

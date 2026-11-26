@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Site;
 
+use App\Domain\Calendar\Agenda;
 use App\Domain\Media\Actions\ReplaceImage;
 use App\Enums\Permission;
 use App\Enums\ProfileVisibility;
@@ -46,6 +47,8 @@ class SchoolEdit extends Component
 
     public string $max_profile_visibility = 'network';
 
+    public string $calendar_default = 'personal';
+
     public function mount(?School $school = null): void
     {
         // Only site admins create schools; everyone else edits the active one.
@@ -59,6 +62,7 @@ class SchoolEdit extends Component
             $this->email_domains = implode(', ', $this->school->email_domains ?? []);
             $this->allow_self_registration = $this->school->allowsSelfRegistration();
             $this->max_profile_visibility = $this->school->maxProfileVisibility()->value;
+            $this->calendar_default = in_array($this->school->setting('calendar_default'), Agenda::MODES, true) ? $this->school->setting('calendar_default') : (string) config('mci.calendar.default', 'personal');
         }
     }
 
@@ -90,6 +94,7 @@ class SchoolEdit extends Component
             'city' => ['nullable', 'string', 'max:100'],
             'email_domains' => ['nullable', 'string', 'max:500', 'regex:/^\s*([a-z0-9.-]+\.[a-z]{2,})(\s*,\s*[a-z0-9.-]+\.[a-z]{2,})*\s*$/i'],
             'max_profile_visibility' => ['required', Rule::enum(ProfileVisibility::class)],
+            'calendar_default' => ['required', Rule::in(Agenda::MODES)],
             'logoUpload' => $this->imageUploadRule(),
         ];
     }
@@ -121,6 +126,7 @@ class SchoolEdit extends Component
         $settings = array_merge($this->school?->settings ?? [], [
             'allow_self_registration' => $this->allow_self_registration,
             'max_profile_visibility' => $this->max_profile_visibility,
+            'calendar_default' => $this->calendar_default,
         ]);
 
         if ($this->school && ! $this->isSiteAdmin()) {

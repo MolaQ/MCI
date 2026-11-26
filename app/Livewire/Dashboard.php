@@ -2,6 +2,8 @@
 
 namespace App\Livewire;
 
+use App\Domain\Calendar\Agenda;
+use App\Enums\AnnouncementPriority;
 use App\Enums\Feature;
 use App\Enums\Permission;
 use App\Enums\UserStatus;
@@ -13,19 +15,146 @@ use App\Models\User;
 use App\Models\WorkflowRequest;
 use App\Support\CurrentSchool;
 use App\Support\Features;
+use Carbon\CarbonImmutable;
+use Flux\Flux;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Title;
+use Livewire\Attributes\Url;
 use Livewire\Component;
 
 /**
- * Signed-in home: the internal content of the current school comes first
- * (announcements, tasks, workflow decisions, events), each block only when
- * its module is switched on; school administration figures come last.
+ * Signed-in home, a command centre for "what is happening at school":
+ * 1. today's agenda (events, my deadlines, key announcements) next to what
+ *    needs my attention, 2. the month calendar (personal or school view,
+ *    default per person → school → site), 3. projects stretched over time,
+ * then my requests, groups and the school administration figures.
+ * Every block follows its module switch.
  */
 #[Title('Pulpit')]
 class Dashboard extends Component
 {
+    #[Url(as: 'miesiac', except: '')]
+    public string $month = '';
+
+    #[Url(as: 'kalendarz', except: '')]
+    public string $calendar = '';
+
+    public function mount(): void
+    {
+        if (! in_array($this->calendar, Agenda::MODES, true)) {
+            $this->calendar = '';
+        }
+    }
+
+    /** The view shown now: chosen in the toggle, else the person's default. */
+    #[Computed]
+    public function mode(): string
+    {
+        return $this->calendar !== '' ? $this->calendar : $this->defaultMode;
+    }
+
+    #[Computed]
+    public function defaultMode(): string
+    {
+        return Agenda::defaultMode(Auth::user(), app(CurrentSchool::class)->get());
+    }
+
+    public function setCalendar(string $mode): void
+    {
+        $this->calendar = in_array($mode, Agenda::MODES, true) && $mode !== $this->defaultMode ? $mode : '';
+        unset($this->mode, $this->monthDays, $this->timeline);
+    }
+
+    /** Makes the current view the person's default (also in Profile). */
+    public function rememberCalendar(): void
+    {
+        $user = Auth::user();
+        $prefs = $user->notification_prefs ?? [];
+        $prefs['calendar'] = $this->mode;
+        $user->forceFill(['notification_prefs' => $prefs])->save();
+        $this->calendar = '';
+        unset($this->defaultMode, $this->mode);
+        Flux::toast(text: __('Zapisano domyślny widok kalendarza.'));
+    }
+
+    public function shiftMonth(int $by): void
+    {
+        $this->month = $by === 0 ? '' : Agenda::month($this->month)->addMonths(max(-12, min(12, $by)))->format('Y-m');
+        if ($this->month === now()->format('Y-m')) {
+            $this->month = '';
+        }
+        unset($this->monthDays);
+    }
+
+    #[Computed]
+    public function currentMonth(): CarbonImmutable
+    {
+        return Agenda::month($this->month);
+    }
+
+    /** Today's items in the current school (always the personal view: what concerns me today). */
+    #[Computed]
+    public function today(): Collection
+    {
+        $school = app(CurrentSchool::class)->get();
+        if (! $school) {
+            return collect();
+        }
+        $items = app(Agenda::class)->forUser(Auth::user(), $school, 'personal', now()->startOfDay(), now()->endOfDay());
+
+        return collect(Agenda::byDay($items, now()->startOfDay(), now()->endOfDay())[now()->toDateString()] ?? []);
+    }
+
+    /** @return array<string, Collection> */
+    #[Computed]
+    public function monthDays(): array
+    {
+        $school = app(CurrentSchool::class)->get();
+        if (! $school) {
+            return [];
+        }
+        $grid = Agenda::monthGrid($this->currentMonth);
+        $from = $grid[0][0]->startOfDay();
+        $to = end($grid)[6]->endOfDay();
+
+        return Agenda::byDay(app(Agenda::class)->forUser(Auth::user(), $school, $this->mode, $from, $to), $from, $to);
+    }
+
+    /** @return array{from: CarbonImmutable, to: CarbonImmutable} */
+    #[Computed]
+    public function window(): array
+    {
+        $from = CarbonImmutable::now()->startOfWeek()->subWeeks(2);
+
+        return ['from' => $from, 'to' => $from->addWeeks(16)->endOfDay()];
+    }
+
+    #[Computed]
+    public function timeline(): Collection
+    {
+        $school = app(CurrentSchool::class)->get();
+
+        return $school ? app(Agenda::class)->projectsForUser(Auth::user(), $school, $this->mode, $this->window['from'], $this->window['to']) : collect();
+    }
+
+    /** Key announcements of the day: unread important/urgent ones, or published today. */
+    #[Computed]
+    public function keyAnnouncements(): Collection
+    {
+        if (! $this->on(Feature::Announcements)) {
+            return collect();
+        }
+
+        return Auth::user()->announcements()->live()
+            ->where('announcements.school_id', app(CurrentSchool::class)->id())
+            ->where(fn ($q) => $q->where('announcements.published_at', '>=', now()->startOfDay())
+                ->orWhere(fn ($u) => $u->whereNull('announcement_recipients.read_at')->whereIn('announcements.priority', [AnnouncementPriority::Important->value, AnnouncementPriority::Urgent->value])))
+            ->orderByRaw('case announcements.priority when ? then 0 when ? then 1 else 2 end', [AnnouncementPriority::Urgent->value, AnnouncementPriority::Important->value])
+            ->latest('published_at')->limit(3)->get();
+    }
+
     private function on(Feature $feature): bool
     {
         return app(CurrentSchool::class)->id() !== null && app(Features::class)->enabled($feature);

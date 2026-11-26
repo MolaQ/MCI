@@ -27,6 +27,7 @@ return [
         'created' => 'Utworzono szkołę',
         'updated' => 'Zmieniono szkołę',
         'policy_updated' => 'Zmieniono zasady szkoły',
+        'tv_updated' => 'Zmieniono ekrany trybu TV szkoły',
         'member_added' => 'Dodano osobę do szkoły',
         'member_suspended' => 'Zawieszono dostęp do szkoły',
         'member_restored' => 'Przywrócono dostęp do szkoły',
@@ -43,6 +44,9 @@ return [
     'settings' => [
         'appearance_updated' => 'Zmieniono wygląd',
         'appearance_reset' => 'Przywrócono domyślny wygląd',
+        'tv_updated' => 'Zmieniono ekrany trybu TV',
+        'logo_removed' => 'Usunięto logo',
+        'favicon_removed' => 'Przywrócono domyślną ikonę strony',
     ],
     'catalog' => [
         'created' => 'Dodano kategorię lub typ',

@@ -1,3 +1,4 @@
+@php($single = \App\Models\School::isSingle())
 <div class="space-y-6">
     <x-ui.page-header :title="__('Projekty')" :subtitle="__('Projekty szkolne i międzyszkolne: zespół, kamienie milowe, zadania i wnioski w jednym miejscu.')">
         @if ($canCreate)
@@ -54,7 +55,7 @@
                             <div class="line-clamp-2 font-semibold text-zinc-900 group-hover:text-primary dark:text-white">{{ $p->name }}</div>
                             <div class="flex flex-wrap items-center gap-x-2 text-xs text-zinc-500">
                                 <span>{{ $p->kind->label() }}</span>
-                                <span>· {{ $p->school->short_name }}</span>
+                                @unless ($single)<span>· {{ $p->school->short_name }}</span>@endunless
                                 @if ($p->partner_schools_count)
                                     <span class="inline-flex items-center gap-0.5">· <flux:icon name="arrows-right-left" variant="micro" /> {{ trans_choice('+:count szkoła|+:count szkoły|+:count szkół', $p->partner_schools_count) }}</span>
                                 @endif

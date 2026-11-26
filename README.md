@@ -22,7 +22,8 @@ ordinary shared PHP hosting (cron only); a VPS is optional.
 | 5 | To-Do (personal and assigned tasks, checklists, reminders) | ✅ |
 | 6 | Workflow (request templates, multi-stage approvals, SLA reminders) | ✅ |
 | 7 | Project Manager (milestones, linked tasks and requests), grouped sidebar, favicon editor, safe demo mode | ✅ |
-| 8–11 | Safety alerts, TV mode, operations (ZIP updates, daily 03:00 backups kept 14 days), logs & statistics | planned |
+| 8 | Command centre (agenda, month calendar, projects over time), rotating TV screens, single-school mode | ✅ |
+| 9–11 | Safety alerts, TV mode, operations (ZIP updates, daily 03:00 backups kept 14 days), logs & statistics | planned |
 
 ## Local development
 
