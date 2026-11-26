@@ -30,7 +30,7 @@ class Task extends Model
     use HasFactory, SoftDeletes;
 
     protected $fillable = [
-        'school_id', 'event_id', 'created_by', 'title', 'description', 'is_personal', 'priority', 'status',
+        'school_id', 'event_id', 'workflow_request_id', 'created_by', 'title', 'description', 'is_personal', 'priority', 'status',
         'due_at', 'all_day', 'remind_before_minutes', 'completed_at', 'completed_by', 'position',
     ];
 

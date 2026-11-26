@@ -28,3 +28,6 @@ Schedule::command('mci:deliver-announcements')->everyMinute()->withoutOverlappin
 
 // To-Do reminders: due soon and overdue, idempotent via task_reminders (Step 5).
 Schedule::command('mci:task-reminders')->everyFifteenMinutes()->withoutOverlapping();
+
+// Workflow: approvers past the stage deadline get one reminder a day (Step 6).
+Schedule::command('mci:workflow-reminders')->hourly()->withoutOverlapping();

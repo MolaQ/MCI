@@ -9,4 +9,5 @@ return [
     'settings' => 'Ustawienia',
     'catalog' => 'Kategorie i typy',
     'task' => 'Zadania',
+    'workflow' => 'Obiegi i wnioski',
 ];

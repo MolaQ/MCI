@@ -23,6 +23,7 @@ use App\Livewire\Settings;
 use App\Livewire\Settings\Profile;
 use App\Livewire\Site;
 use App\Livewire\Tasks;
+use App\Livewire\Workflows;
 use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
 use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
 use Illuminate\Support\Facades\Route;
@@ -99,6 +100,15 @@ Route::middleware('auth')->group(function () {
         Route::livewire('/zadania/{task}/edycja', Tasks\Edit::class)->whereNumber('task')->name('tasks.edit');
     });
 
+    Route::middleware('feature:workflows')->group(function () {
+        Route::livewire('/obiegi', Workflows\Index::class)->name('workflows.index');
+        Route::livewire('/obiegi/nowy', Workflows\Create::class)->name('workflows.create');
+        Route::livewire('/obiegi/{request}', Workflows\Show::class)->whereNumber('request')->name('workflows.show');
+        Route::livewire('/administracja/szkola/obiegi', Workflows\Templates::class)->name('admin.workflows');
+        Route::livewire('/administracja/szkola/obiegi/nowy', Workflows\TemplateEdit::class)->name('admin.workflows.create');
+        Route::livewire('/administracja/szkola/obiegi/{template}', Workflows\TemplateEdit::class)->whereNumber('template')->name('admin.workflows.edit');
+    });
+
     Route::post('/szkola/przelacz', SwitchSchoolController::class)->name('school.switch');
 
     Route::livewire('/ustawienia/profil', Profile::class)->name('profile');
@@ -136,6 +146,9 @@ Route::middleware('auth')->group(function () {
         Route::livewire('/wyglad', Appearance::class)->name('appearance');
         Route::livewire('/funkcje', Site\Features::class)->name('features');
         Route::livewire('/kategorie', Catalog\Manage::class)->defaults('scope', 'site')->name('catalog');
+        Route::livewire('/obiegi', Workflows\Templates::class)->defaults('scope', 'site')->name('workflows');
+        Route::livewire('/obiegi/nowy', Workflows\TemplateEdit::class)->defaults('scope', 'site')->name('workflows.create');
+        Route::livewire('/obiegi/{template}', Workflows\TemplateEdit::class)->defaults('scope', 'site')->whereNumber('template')->name('workflows.edit');
         Route::livewire('/dziennik', AuditLog::class)->defaults('scope', 'site')->name('journal');
     });
 });

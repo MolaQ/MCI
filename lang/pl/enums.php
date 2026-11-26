@@ -65,6 +65,24 @@ return [
         'audit_view' => 'Podgląd dziennika zdarzeń',
         'settings_manage' => 'Ustawienia systemu i wygląd',
         'categories_manage' => 'Kategorie wydarzeń i typy grup',
+        'workflows_manage' => 'Szablony obiegów i wniosków',
+    ],
+
+    'workflow_status' => [
+        'in_progress' => 'W toku',
+        'returned' => 'Zwrócony do poprawy',
+        'approved' => 'Zatwierdzony',
+        'rejected' => 'Odrzucony',
+        'cancelled' => 'Wycofany',
+    ],
+
+    'workflow_action' => [
+        'submitted' => 'złożył(a) wniosek',
+        'approved' => 'zatwierdził(a)',
+        'rejected' => 'odrzucił(a)',
+        'returned' => 'zwrócił(a) do poprawy',
+        'resubmitted' => 'poprawił(a) i złożył(a) ponownie',
+        'cancelled' => 'wycofał(a) wniosek',
     ],
 
     'task_status' => [

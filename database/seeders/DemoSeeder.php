@@ -4,6 +4,9 @@ namespace Database\Seeders;
 
 use App\Domain\Communication\Actions\PublishAnnouncement;
 use App\Domain\Tasks\Actions\SaveTask;
+use App\Domain\Workflows\Actions\DecideRequest;
+use App\Domain\Workflows\Actions\ManageTemplates;
+use App\Domain\Workflows\Actions\SubmitRequest;
 use App\Enums\GroupRole;
 use App\Enums\GroupType;
 use App\Enums\Role;
@@ -13,6 +16,7 @@ use App\Models\Group;
 use App\Models\School;
 use App\Models\Task;
 use App\Models\User;
+use App\Models\WorkflowTemplate;
 use App\Support\CurrentSchool;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Str;
@@ -104,6 +108,7 @@ class DemoSeeder extends Seeder
         $this->publicFront($school, $partner);
         $this->announcements($school, $coordinators->first(), $teacherUsers, $subjectGroups->first(), $tutors);
         $this->tasks($school, $coordinators->first(), $teacherUsers, $tutors);
+        $this->workflows($school, $coordinators->first(), $teacherUsers);
 
         $this->command?->info('Demo data: 70 staff in '.$school->short_name.', partner school '.$partner->short_name.' with 3 shared teachers.');
     }
@@ -160,6 +165,63 @@ class DemoSeeder extends Seeder
                 'location' => $location, 'visibility' => $visibility, 'public_description' => $public,
             ]);
         }
+    }
+
+    private function workflows(School $school, User $coordinator, $teachers): void
+    {
+        if (WorkflowTemplate::query()->exists()) {
+            return;
+        }
+        $admin = User::query()->where('email', config('mci.admin.email'))->first();
+        $manage = app(ManageTemplates::class);
+        app(CurrentSchool::class)->set($school, $coordinator);
+
+        $trip = $manage->save($coordinator, $school, [
+            'name' => 'Wycieczka szkolna', 'icon' => 'map',
+            'description' => 'Zgoda na wyjście lub wyjazd z uczniami. Dołącz program i listę uczestników.',
+        ], [
+            ['label' => 'Klasa', 'type' => 'text', 'required' => true],
+            ['label' => 'Data wyjazdu', 'type' => 'date', 'required' => true],
+            ['label' => 'Liczba uczniów', 'type' => 'number', 'required' => true],
+            ['label' => 'Transport', 'type' => 'select', 'options' => "Autokar\nPociąg\nPieszo", 'required' => true],
+            ['label' => 'Program', 'type' => 'textarea', 'required' => false],
+        ], [
+            ['name' => 'Wicedyrektor', 'approver_type' => 'role', 'approver_id' => 'coordinator', 'sla_hours' => 48, 'task_on_reach' => true],
+            ['name' => 'Dyrektor', 'approver_type' => 'role', 'approver_id' => 'admin', 'sla_hours' => 72, 'followup_task' => 'Zebrać zgody rodziców i oddać listę w sekretariacie'],
+        ]);
+        $manage->save($coordinator, $school, ['name' => 'Zakup sprzętu', 'icon' => 'shopping-cart', 'min_attachments' => 1,
+            'description' => 'Zakupy powyżej 500 zł. Dołącz ofertę lub zrzut ekranu ze sklepu.'], [
+                ['label' => 'Kwota brutto (zł)', 'type' => 'number', 'required' => true],
+                ['label' => 'Uzasadnienie', 'type' => 'textarea', 'required' => true],
+            ], [
+                ['name' => 'Kierownik pracowni', 'approver_type' => 'role', 'approver_id' => 'coordinator', 'sla_hours' => 72],
+                ['name' => 'Księgowość i dyrektor', 'approver_type' => 'role', 'approver_id' => 'admin'],
+            ]);
+
+        if ($admin?->is_site_admin) {
+            $manage->save($admin, null, ['name' => 'Wydarzenie międzyszkolne', 'icon' => 'globe-europe-africa',
+                'description' => 'Wspólne wydarzenie kilku szkół: zawody, konkurs, dzień otwarty.'], [
+                    ['label' => 'Szkoły partnerskie', 'type' => 'text', 'required' => true],
+                    ['label' => 'Termin', 'type' => 'date', 'required' => true],
+                ], [['name' => 'Koordynator szkoły', 'approver_type' => 'role', 'approver_id' => 'coordinator', 'sla_hours' => 120]]);
+        }
+
+        // One request already past the first stage, waiting for the director.
+        $teacher = $teachers[1];
+        app(CurrentSchool::class)->set($school, $teacher);
+        $request = app(SubmitRequest::class)->handle($teacher, $school, $trip, 'Wyjazd 3TM do Muzeum Techniki', [
+            'klasa' => '3TM', 'data_wyjazdu' => now()->addWeeks(3)->toDateString(), 'liczba_uczniow' => '26',
+            'transport' => 'Pociąg', 'program' => "8:00 zbiórka na dworcu\n10:30 Muzeum Techniki\n15:00 powrót",
+        ]);
+        app(CurrentSchool::class)->set($school, $coordinator);
+        app(DecideRequest::class)->handle($coordinator, $request, 'approve', '<p>Zgoda, proszę o listę opiekunów.</p>');
+
+        app(CurrentSchool::class)->set($school, $teachers[2]);
+        app(SubmitRequest::class)->handle($teachers[2], $school, $trip, 'Wyjście 1A do kina', [
+            'klasa' => '1A', 'data_wyjazdu' => now()->addDays(10)->toDateString(), 'liczba_uczniow' => '30', 'transport' => 'Pieszo',
+        ]);
+
+        app(CurrentSchool::class)->set(null);
     }
 
     private function tasks(School $school, User $coordinator, $teachers, ?Group $tutors): void
