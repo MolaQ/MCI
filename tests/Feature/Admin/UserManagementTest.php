@@ -22,14 +22,14 @@ it('forbids teachers from the user administration', function () {
 it('lists and filters users', function () {
     $this->actingAs(admin());
     member(['first_name' => 'Zofia', 'last_name' => 'Wiśniewska']);
-    member(['first_name' => 'Piotr', 'last_name' => 'Zieliński']);
+    member(['first_name' => 'Piotr', 'last_name' => 'Zielińska-Nieznana']);
     // Someone from another school never appears in this school's list.
     member(['first_name' => 'Obca', 'last_name' => 'Wiśniewska-Obca'], School::factory()->create());
 
     Livewire::test(Index::class)
         ->set('search', 'Wiśniew')
         ->assertSee('Wiśniewska')
-        ->assertDontSee('Zieliński')
+        ->assertDontSee('Zielińska-Nieznana')
         ->assertDontSee('Wiśniewska-Obca');
 });
 

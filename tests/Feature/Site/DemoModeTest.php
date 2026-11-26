@@ -54,3 +54,51 @@ it('shows grouped navigation with the projects module', function () {
         ->assertSee('data-nav-section="work"', false)
         ->assertSee(route('projects.index'), false);
 });
+
+it('follows the flag even when the configuration was cached in demo mode', function () {
+    $main = config('mci.demo.main_connection');
+    $prefix = config('cache.prefix');
+
+    // config:cache while demo mode is on: the cached file holds demo values.
+    File::ensureDirectoryExists(dirname(config('mci.demo.flag')));
+    File::put(config('mci.demo.flag'), '{}');
+    DemoMode::boot();
+    expect(config('database.default'))->toBe(DemoMode::CONNECTION);
+    $cached = config()->all();
+
+    // Flag removed, app boots again from that cached configuration.
+    File::delete(config('mci.demo.flag'));
+    config()->set($cached);
+    DemoMode::boot();
+    expect(config('database.default'))->toBe($main)
+        ->and(config('cache.prefix'))->toBe($prefix)
+        ->and(config('filesystems.disks.media.root'))->toBe(storage_path('app/media'));
+
+    // Switching on again does not stack suffixes.
+    File::put(config('mci.demo.flag'), '{}');
+    DemoMode::boot();
+    DemoMode::boot();
+    expect(config('cache.prefix'))->toBe($prefix.'demo_');
+
+    File::delete(config('mci.demo.flag'));
+    DemoMode::boot();
+    expect(config('database.default'))->toBe($main);
+});
+
+it('recovers from a cache written by the old switch without a remembered base', function () {
+    $main = config('mci.demo.main_connection');
+    $prefix = config('cache.prefix');
+    config([
+        'mci.demo.base' => null,
+        'database.default' => DemoMode::CONNECTION,
+        'cache.prefix' => $prefix.'demo_',
+        'session.cookie' => config('session.cookie').'_demo',
+        'filesystems.disks.media.root' => storage_path('app/demo/media'),
+    ]);
+
+    DemoMode::boot();
+
+    expect(config('database.default'))->toBe($main)
+        ->and(config('cache.prefix'))->toBe($prefix)
+        ->and(config('filesystems.disks.media.root'))->toBe(storage_path('app/media'));
+});
